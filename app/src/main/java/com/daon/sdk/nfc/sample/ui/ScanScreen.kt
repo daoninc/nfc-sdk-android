@@ -47,6 +47,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -125,12 +126,12 @@ fun ScanScreen(viewModel: NfcViewModel) {
                 // ── Header icon ──────────────────────────────────────────────
                 Surface(
                     shape = RoundedCornerShape(AppDimens.CornerLarge),
-                    color = MaterialTheme.colorScheme.primary,
+                    color = Color.Transparent,
                     modifier = Modifier.size(AppDimens.LogoContainerSize),
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Image(
-                            painter = painterResource(R.drawable.ic_daon_logo),
+                            painter = painterResource(R.drawable.daon_label_logo),
                             contentDescription = "Daon logo",
                             modifier = Modifier.size(AppDimens.LogoIconSize),
                         )
