@@ -1,0 +1,31 @@
+pluginManagement {
+    repositories {
+        google()
+        gradlePluginPortal()
+        mavenCentral()
+    }
+    plugins {
+        id 'org.jetbrains.kotlin.plugin.compose' version '2.2.20'
+    }
+}
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+
+        // Daon SDK packages — replace credentials with a valid GitHub fine-grained token
+        // that has read access to https://github.com/daoninc/sdk-packages
+        maven {
+            url = uri("https://maven.pkg.github.com/daoninc/sdk-packages/")
+            credentials {
+                username = "username"
+                password = "fine_grained_token"
+            }
+        }
+    }
+}
+
+include ':app'
+rootProject.name = "nfc-sdk-android"
