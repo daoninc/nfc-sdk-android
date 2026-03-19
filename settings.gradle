@@ -20,8 +20,8 @@ dependencyResolutionManagement {
         maven {
             url = uri("https://maven.pkg.github.com/daoninc/sdk-packages/")
             credentials {
-                username = "username"
-                password = "fine_grained_token"
+                username = "your-github-username"
+                password = "your-fine-grained-token"
             }
         }
     }

@@ -59,7 +59,7 @@ android {
 }
 
 dependencies {
-    implementation "com.daon.sdk:nfc:1.3.3"
+    implementation "com.daon.sdk:nfc:1.3.57"
 
     // NFC SDK transitive dependencies
     implementation ('org.jmrtd:jmrtd:0.8.2') {
