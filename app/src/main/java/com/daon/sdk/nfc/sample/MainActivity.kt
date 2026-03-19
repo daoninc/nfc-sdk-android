@@ -9,8 +9,8 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.fragment.app.FragmentActivity
-import com.daon.sdk.nfc.sample.ui.ResultScreen
-import com.daon.sdk.nfc.sample.ui.ScanScreen
+import com.daon.sdk.nfc.sample.ui.result.ResultScreen
+import com.daon.sdk.nfc.sample.ui.scan.ScanScreen
 import com.daon.sdk.nfc.sample.ui.theme.NfcSdkAndroidTheme
 
 /**

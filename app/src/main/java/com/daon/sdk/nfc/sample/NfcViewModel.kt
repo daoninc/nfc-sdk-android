@@ -20,6 +20,22 @@ enum class NfcScanState {
 }
 
 /**
+ * Describes whether NFC is usable on this device at the moment [NfcViewModel.startScan]
+ * is called, as reported by the SDK's own [com.daon.sdk.nfc.NFCReader.isSupported] and
+ * [com.daon.sdk.nfc.NFCReader.isEnabled] APIs.
+ */
+enum class NfcAvailability {
+    /** NFC hardware is present and enabled — scanning can proceed. */
+    AVAILABLE,
+
+    /** The device has no NFC hardware ([NFCReader.isSupported] returned false). */
+    NOT_SUPPORTED,
+
+    /** NFC hardware is present but switched off in settings ([NFCReader.isEnabled] returned false). */
+    DISABLED,
+}
+
+/**
  * Holds the data surfaced to the UI during and after an NFC scan.
  *
  * @param scanState Current scan state.
@@ -55,7 +71,18 @@ class NfcViewModel(application: Application) : AndroidViewModel(application) {
     /** Whether the result screen should be shown instead of the scan screen. */
     val showResult: StateFlow<Boolean> = _showResult.asStateFlow()
 
-    private var nfcReader: NFCReader? = null
+    private val _nfcAvailability = MutableStateFlow<NfcAvailability?>(null)
+    /**
+     * Non-null when the SDK reported NFC as absent or disabled at the time [startScan] was
+     * called.  The UI should present an error dialog and call [dismissNfcUnavailable] to
+     * clear it.
+     */
+    val nfcAvailability: StateFlow<NfcAvailability?> = _nfcAvailability.asStateFlow()
+
+    // `internal` visibility is intentional: the property must remain private to callers
+    // outside this module but needs to be injectable in unit tests (where constructing a
+    // real NFCReader is not possible because it requires a live FragmentActivity).
+    internal var nfcReader: NFCReader? = null
     private var pendingParams: PassportParameters? = null
 
     // TagReaderCallback implementation forwarded from the Activity's onNewIntent.
@@ -111,13 +138,32 @@ class NfcViewModel(application: Application) : AndroidViewModel(application) {
     /**
      * Enables NFC foreground dispatch and shows the scanning dialog.
      *
+     * Before opening the dialog the method queries the SDK — [NFCReader.isSupported] and
+     * [NFCReader.isEnabled] — to verify that NFC is usable.  If either check fails,
+     * [nfcAvailability] is updated with the reason and the method returns early without
+     * opening the dialog.  The UI should observe [nfcAvailability] and call
+     * [dismissNfcUnavailable] once the user has dismissed the error.
+     *
      * @param params Passport parameters derived from the user's input.
      */
     fun startScan(params: PassportParameters) {
+        val reader = nfcReader
+        if (reader != null) {
+            when {
+                !reader.isSupported() -> {
+                    _nfcAvailability.value = NfcAvailability.NOT_SUPPORTED
+                    return
+                }
+                !reader.isEnabled() -> {
+                    _nfcAvailability.value = NfcAvailability.DISABLED
+                    return
+                }
+            }
+        }
         pendingParams = params
         _uiState.value = NfcUiState(scanState = NfcScanState.IN_PROGRESS, message = "Hold your device near the document.")
         _dialogVisible.value = true
-        nfcReader?.enable()
+        reader?.enable()
     }
 
     /**
@@ -129,6 +175,14 @@ class NfcViewModel(application: Application) : AndroidViewModel(application) {
         _dialogVisible.value = false
         _showResult.value = false
         _uiState.value = NfcUiState()
+    }
+
+    /**
+     * Clears the [nfcAvailability] error state.
+     * Call from the UI after the user dismisses the NFC unavailable / disabled dialog.
+     */
+    fun dismissNfcUnavailable() {
+        _nfcAvailability.value = null
     }
 
     /**

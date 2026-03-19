@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- NFC hardware access — normal permission, no runtime request needed. -->
+    <uses-permission android:name="android.permission.NFC" />
+    <!--
+        Mark NFC as not strictly required so the app can be installed on devices without it.
+        NfcViewModel.startScan() uses NFCReader.isSupported() to handle the no-hardware case.
+    -->
+    <uses-feature android:name="android.hardware.nfc" android:required="false" />
+
     <application
         android:label="Daon NFC Sample App"
         android:icon="@mipmap/ic_launcher"

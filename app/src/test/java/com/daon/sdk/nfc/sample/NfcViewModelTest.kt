@@ -1,6 +1,8 @@
 package com.daon.sdk.nfc.sample
 
 import android.app.Application
+import com.daon.sdk.nfc.NFCReader
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -11,6 +13,8 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -19,26 +23,34 @@ import org.junit.Test
  * Unit tests for the [NfcViewModel] state machine.
  *
  * [android.app.Application] is mocked so the ViewModel can be instantiated on the JVM
- * without a real Android runtime.  NFC hardware operations ([com.daon.sdk.nfc.NFCReader])
- * are never exercised here; the tests focus purely on the [kotlinx.coroutines.flow.StateFlow]
- * values that the ViewModel emits in response to method calls.
+ * without a real Android runtime.  A mock [NFCReader] is injected via [NfcViewModel.nfcReader]
+ * so that the availability checks — which delegate to [NFCReader.isSupported] and
+ * [NFCReader.isEnabled] from the SDK — can be exercised without real hardware.
  *
- * Note: [NfcViewModel.initReader] is intentionally **not** called in these tests because
- * it constructs an [com.daon.sdk.nfc.NFCReader] which requires real Android context.
- * The ViewModel is designed to handle a `null` reader gracefully (all `nfcReader?.xxx()`
- * calls are null-safe), so the state-machine tests remain valid without it.
+ * The default setup stubs the reader as supported and enabled so all existing state-machine
+ * tests continue to pass.  Individual availability tests override the stubs locally.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class NfcViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var viewModel: NfcViewModel
+    private lateinit var mockNfcReader: NFCReader
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
+
+        mockNfcReader = mockk(relaxed = true)
+        // Default: hardware present and enabled so all existing state-machine tests pass.
+        every { mockNfcReader.isSupported() } returns true
+        every { mockNfcReader.isEnabled() } returns true
+
         val application = mockk<Application>(relaxed = true)
         viewModel = NfcViewModel(application)
+        // Inject the mock reader directly; avoids constructing a real NFCReader
+        // (which requires a live FragmentActivity).
+        viewModel.nfcReader = mockNfcReader
     }
 
     @After
@@ -63,6 +75,11 @@ class NfcViewModelTest {
         assertEquals(NfcUiState(), viewModel.uiState.value)
     }
 
+    @Test
+    fun `initial nfcAvailability is null`() = runTest {
+        assertNull(viewModel.nfcAvailability.value)
+    }
+
     // ── startScan ─────────────────────────────────────────────────────────────
 
     @Test
@@ -82,6 +99,51 @@ class NfcViewModelTest {
     fun `startScan sets a non-empty message`() = runTest {
         viewModel.startScan(buildPassportParameters())
         assertTrue(viewModel.uiState.value.message.isNotEmpty())
+    }
+
+    @Test
+    fun `startScan when NFC is available does not set nfcAvailability`() = runTest {
+        viewModel.startScan(buildPassportParameters())
+        assertNull(viewModel.nfcAvailability.value)
+    }
+
+    // ── NFC availability — SDK isSupported() / isEnabled() ───────────────────
+
+    @Test
+    fun `startScan when NFCReader isSupported returns false sets nfcAvailability to NOT_SUPPORTED`() = runTest {
+        every { mockNfcReader.isSupported() } returns false
+        viewModel.startScan(buildPassportParameters())
+        assertEquals(NfcAvailability.NOT_SUPPORTED, viewModel.nfcAvailability.value)
+    }
+
+    @Test
+    fun `startScan when NFCReader isSupported returns false does not open the scan dialog`() = runTest {
+        every { mockNfcReader.isSupported() } returns false
+        viewModel.startScan(buildPassportParameters())
+        assertFalse(viewModel.dialogVisible.value)
+    }
+
+    @Test
+    fun `startScan when NFCReader isEnabled returns false sets nfcAvailability to DISABLED`() = runTest {
+        every { mockNfcReader.isEnabled() } returns false
+        viewModel.startScan(buildPassportParameters())
+        assertEquals(NfcAvailability.DISABLED, viewModel.nfcAvailability.value)
+    }
+
+    @Test
+    fun `startScan when NFCReader isEnabled returns false does not open the scan dialog`() = runTest {
+        every { mockNfcReader.isEnabled() } returns false
+        viewModel.startScan(buildPassportParameters())
+        assertFalse(viewModel.dialogVisible.value)
+    }
+
+    @Test
+    fun `dismissNfcUnavailable clears nfcAvailability state`() = runTest {
+        every { mockNfcReader.isSupported() } returns false
+        viewModel.startScan(buildPassportParameters())
+        assertNotNull(viewModel.nfcAvailability.value)
+        viewModel.dismissNfcUnavailable()
+        assertNull(viewModel.nfcAvailability.value)
     }
 
     // ── cancelScan ────────────────────────────────────────────────────────────
@@ -173,7 +235,6 @@ class NfcViewModelTest {
     fun `resumeReader when dialog is visible does not throw`() = runTest {
         viewModel.startScan(buildPassportParameters())
         assertTrue(viewModel.dialogVisible.value)
-        // NFCReader is null so the null-safe call is a no-op; state must remain stable.
         viewModel.resumeReader()
         assertTrue(viewModel.dialogVisible.value)
     }
@@ -185,7 +246,6 @@ class NfcViewModelTest {
         viewModel.startScan(buildPassportParameters())
         val stateBefore = viewModel.uiState.value
         viewModel.disableReader()
-        // NFCReader is null; the null-safe call must not change state.
         assertEquals(stateBefore, viewModel.uiState.value)
         assertTrue(viewModel.dialogVisible.value)
     }
