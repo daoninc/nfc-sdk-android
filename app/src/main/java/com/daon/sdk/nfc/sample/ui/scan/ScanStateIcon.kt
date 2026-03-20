@@ -21,6 +21,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.stringResource
+import com.daon.sdk.nfc.sample.R
 import com.daon.sdk.nfc.sample.ui.theme.AppDimens
 
 /**
@@ -71,7 +73,7 @@ internal fun ScanStateIcon(success: Boolean) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
                     imageVector = if (success) Icons.Rounded.Check else Icons.Rounded.Close,
-                    contentDescription = if (success) "Success" else "Failed",
+                    contentDescription = if (success) stringResource(R.string.content_description_scan_success) else stringResource(R.string.content_description_scan_failed),
                     tint = contentColor,
                     modifier = Modifier.size(AppDimens.StatusIconSize),
                 )

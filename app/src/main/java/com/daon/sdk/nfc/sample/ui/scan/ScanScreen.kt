@@ -28,8 +28,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import com.daon.sdk.nfc.sample.NfcViewModel
+import com.daon.sdk.nfc.sample.R
 import com.daon.sdk.nfc.sample.ui.theme.AppDimens
 import com.daon.sdk.nfc.reader.passport.PassportParameters
 import java.security.SecureRandom
@@ -61,6 +63,10 @@ fun ScanScreen(viewModel: NfcViewModel) {
     var validationError by remember { mutableStateOf<String?>(null) }
     var enableActiveAuthentication by remember { mutableStateOf(false) }
     var encryptionAlgorithm by remember { mutableStateOf(EncryptionAlgorithm.DEFAULT) }
+
+    val errDocNum = stringResource(R.string.error_document_number_length)
+    val errDob = stringResource(R.string.error_date_of_birth_required)
+    val errDoe = stringResource(R.string.error_date_of_expiry_required)
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -110,7 +116,7 @@ fun ScanScreen(viewModel: NfcViewModel) {
                     onClick = {
                         val dobShort = dateOfBirthMillis?.let { formatShortDate(it) }
                         val doeShort = dateOfExpiryMillis?.let { formatShortDate(it) }
-                        val error = validate(documentNumber, dobShort, doeShort)
+                        val error = validate(documentNumber, dobShort, doeShort, errDocNum, errDob, errDoe)
                         if (error != null) {
                             validationError = error
                         } else {
@@ -136,7 +142,7 @@ fun ScanScreen(viewModel: NfcViewModel) {
                     ),
                 ) {
                     Text(
-                        text = "Start NFC Scan",
+                        text = stringResource(R.string.start_nfc_scan),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.SemiBold,
                     )
@@ -149,10 +155,10 @@ fun ScanScreen(viewModel: NfcViewModel) {
     validationError?.let { message ->
         AlertDialog(
             onDismissRequest = { validationError = null },
-            title = { Text("Invalid input") },
+            title = { Text(stringResource(R.string.error_invalid_input_title)) },
             text = { Text(message) },
             confirmButton = {
-                TextButton(onClick = { validationError = null }) { Text("OK") }
+                TextButton(onClick = { validationError = null }) { Text(stringResource(R.string.ok)) }
             },
         )
     }
@@ -187,12 +193,15 @@ private fun validate(
     documentNumber: String,
     dateOfBirth: String?,
     dateOfExpiry: String?,
+    errDocNum: String,
+    errDob: String,
+    errDoe: String,
 ): String? {
     if (documentNumber.isEmpty() || documentNumber.length > 9) {
-        return "Document number must be between 1 and 9 characters."
+        return errDocNum
     }
-    if (dateOfBirth == null) return "Please select a date of birth."
-    if (dateOfExpiry == null) return "Please select a date of expiry."
+    if (dateOfBirth == null) return errDob
+    if (dateOfExpiry == null) return errDoe
     return null
 }
 

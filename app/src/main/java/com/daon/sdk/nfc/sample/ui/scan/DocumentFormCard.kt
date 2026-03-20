@@ -1,5 +1,6 @@
 package com.daon.sdk.nfc.sample.ui.scan
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -42,6 +43,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.annotation.StringRes
+import androidx.compose.ui.res.stringResource
+import com.daon.sdk.nfc.sample.R
 import com.daon.sdk.nfc.sample.ui.theme.AppDimens
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -49,9 +53,9 @@ import java.util.Locale
 import java.util.TimeZone
 
 /** Encryption algorithm options surfaced in [DocumentFormCard]. */
-internal enum class EncryptionAlgorithm(val label: String) {
-    DEFAULT("Default"),
-    SHA1("SHA1"),
+internal enum class EncryptionAlgorithm(@param:StringRes val labelRes: Int) {
+    DEFAULT(R.string.encryption_algorithm_default),
+    SHA1(R.string.encryption_algorithm_sha1),
 }
 
 /**
@@ -113,7 +117,7 @@ internal fun DocumentFormCard(
             OutlinedTextField(
                 value = documentNumber,
                 onValueChange = { if (it.length <= 9) onDocumentNumberChange(it.uppercase()) },
-                label = { Text("Document Number") },
+                label = { Text(stringResource(R.string.label_document_number)) },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Outlined.CreditCard,
@@ -135,11 +139,11 @@ internal fun DocumentFormCard(
                 value = dateOfBirthMillis?.let { formatDisplayDate(it) } ?: "",
                 onValueChange = {},
                 readOnly = true,
-                label = { Text("Date of Birth") },
+                label = { Text(stringResource(R.string.label_date_of_birth)) },
                 trailingIcon = {
                     Icon(
                         imageVector = Icons.Outlined.CalendarMonth,
-                        contentDescription = "Select date of birth",
+                        contentDescription = stringResource(R.string.content_description_select_date_of_birth),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 },
@@ -154,11 +158,11 @@ internal fun DocumentFormCard(
                 value = dateOfExpiryMillis?.let { formatDisplayDate(it) } ?: "",
                 onValueChange = {},
                 readOnly = true,
-                label = { Text("Date of Expiry") },
+                label = { Text(stringResource(R.string.label_date_of_expiry)) },
                 trailingIcon = {
                     Icon(
                         imageVector = Icons.Outlined.CalendarMonth,
-                        contentDescription = "Select date of expiry",
+                        contentDescription = stringResource(R.string.content_description_select_date_of_expiry),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 },
@@ -177,12 +181,12 @@ internal fun DocumentFormCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Active Authentication",
+                        text = stringResource(R.string.label_active_authentication),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     Text(
-                        text = "Sends a nonce challenge to the chip",
+                        text = stringResource(R.string.label_active_authentication_description),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -194,38 +198,40 @@ internal fun DocumentFormCard(
                 )
             }
 
-            // ── Encryption algorithm selector ─────────────────────────────────
-            ExposedDropdownMenuBox(
-                expanded = encryptionMenuExpanded,
-                onExpandedChange = { encryptionMenuExpanded = it },
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                OutlinedTextField(
-                    value = encryptionAlgorithm.label,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Encryption Algorithm") },
-                    trailingIcon = {
-                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = encryptionMenuExpanded)
-                    },
-                    shape = RoundedCornerShape(AppDimens.CornerSmall),
-                    colors = outlinedFieldColors(),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor(MenuAnchorType.PrimaryNotEditable),
-                )
-                ExposedDropdownMenu(
+            // ── Encryption algorithm selector (visible only when Active Authentication is on) ──
+            AnimatedVisibility(visible = enableActiveAuthentication) {
+                ExposedDropdownMenuBox(
                     expanded = encryptionMenuExpanded,
-                    onDismissRequest = { encryptionMenuExpanded = false },
+                    onExpandedChange = { encryptionMenuExpanded = it },
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
-                    EncryptionAlgorithm.entries.forEach { option ->
-                        DropdownMenuItem(
-                            text = { Text(option.label) },
-                            onClick = {
-                                onEncryptionChange(option)
-                                encryptionMenuExpanded = false
-                            },
-                        )
+                    OutlinedTextField(
+                        value = stringResource(encryptionAlgorithm.labelRes),
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text(stringResource(R.string.label_encryption_algorithm)) },
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = encryptionMenuExpanded)
+                        },
+                        shape = RoundedCornerShape(AppDimens.CornerSmall),
+                        colors = outlinedFieldColors(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor(MenuAnchorType.PrimaryNotEditable),
+                    )
+                    ExposedDropdownMenu(
+                        expanded = encryptionMenuExpanded,
+                        onDismissRequest = { encryptionMenuExpanded = false },
+                    ) {
+                        EncryptionAlgorithm.entries.forEach { option ->
+                            DropdownMenuItem(
+                                text = { Text(stringResource(option.labelRes)) },
+                                onClick = {
+                                    onEncryptionChange(option)
+                                    encryptionMenuExpanded = false
+                                },
+                            )
+                        }
                     }
                 }
             }
@@ -242,10 +248,10 @@ internal fun DocumentFormCard(
                         dobPickerState.selectedDateMillis?.let { onDateOfBirthChange(it) }
                         showDobPicker = false
                     },
-                ) { Text("OK") }
+                ) { Text(stringResource(R.string.ok)) }
             },
             dismissButton = {
-                TextButton(onClick = { showDobPicker = false }) { Text("Cancel") }
+                TextButton(onClick = { showDobPicker = false }) { Text(stringResource(R.string.cancel)) }
             },
         ) {
             DatePicker(state = dobPickerState)
@@ -262,10 +268,10 @@ internal fun DocumentFormCard(
                         doePickerState.selectedDateMillis?.let { onDateOfExpiryChange(it) }
                         showDoePicker = false
                     },
-                ) { Text("OK") }
+                ) { Text(stringResource(R.string.ok)) }
             },
             dismissButton = {
-                TextButton(onClick = { showDoePicker = false }) { Text("Cancel") }
+                TextButton(onClick = { showDoePicker = false }) { Text(stringResource(R.string.cancel)) }
             },
         ) {
             DatePicker(state = doePickerState)

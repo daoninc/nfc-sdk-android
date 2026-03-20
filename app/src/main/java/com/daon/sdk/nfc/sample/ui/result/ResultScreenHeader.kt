@@ -16,8 +16,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import com.daon.sdk.nfc.sample.R
 import com.daon.sdk.nfc.sample.ui.theme.AppDimens
 
 /**
@@ -48,7 +50,7 @@ internal fun ResultScreenHeader() {
         Spacer(Modifier.height(AppDimens.SpacingLarge))
 
         Text(
-            text = "Scan Results",
+            text = stringResource(R.string.result_screen_title),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
@@ -57,7 +59,7 @@ internal fun ResultScreenHeader() {
         Spacer(Modifier.height(AppDimens.SpacingXxSmall))
 
         Text(
-            text = "Passport data successfully read",
+            text = stringResource(R.string.result_screen_subtitle),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,

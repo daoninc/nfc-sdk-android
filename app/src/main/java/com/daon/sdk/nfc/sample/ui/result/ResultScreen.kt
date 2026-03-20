@@ -18,8 +18,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import com.daon.sdk.nfc.sample.NfcViewModel
+import com.daon.sdk.nfc.sample.R
 import com.daon.sdk.nfc.sample.ui.theme.AppDimens
 import com.daon.sdk.nfc.reader.passport.PassportData
 
@@ -82,7 +84,7 @@ fun ResultScreen(
                     ),
                 ) {
                     Text(
-                        text = "Scan Again",
+                        text = stringResource(R.string.button_scan_again),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.SemiBold,
                     )

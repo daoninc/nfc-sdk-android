@@ -11,7 +11,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.StartOffset
@@ -24,6 +23,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
+import com.daon.sdk.nfc.sample.R
 import com.daon.sdk.nfc.sample.ui.theme.AppDimens
 
 /**
@@ -103,7 +104,7 @@ internal fun NfcPulsingIndicator() {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
                     imageVector = Icons.Outlined.Nfc,
-                    contentDescription = "NFC",
+                    contentDescription = stringResource(R.string.content_description_nfc_icon),
                     tint = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.size(AppDimens.NfcIconSize),
                 )

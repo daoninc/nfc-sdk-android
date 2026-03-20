@@ -8,7 +8,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import com.daon.sdk.nfc.sample.NfcAvailability
+import com.daon.sdk.nfc.sample.R
 
 /**
  * Dialog shown when NFC is absent or disabled on the device.
@@ -31,14 +33,14 @@ internal fun NfcUnavailableDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text(if (isDisabled) "NFC disabled" else "NFC not supported")
+            Text(if (isDisabled) stringResource(R.string.nfc_dialog_title_disabled) else stringResource(R.string.nfc_dialog_title_not_supported))
         },
         text = {
             Text(
                 if (isDisabled)
-                    "NFC is turned off. Please enable NFC in Settings to scan your document."
+                    stringResource(R.string.nfc_dialog_message_disabled)
                 else
-                    "This device does not have NFC hardware. NFC is required to read passport chips."
+                    stringResource(R.string.nfc_dialog_message_not_supported)
             )
         },
         confirmButton = {
@@ -49,16 +51,16 @@ internal fun NfcUnavailableDialog(
                         context.startActivity(Intent(Settings.ACTION_NFC_SETTINGS))
                     },
                 ) {
-                    Text("Open Settings")
+                    Text(stringResource(R.string.nfc_dialog_button_open_settings))
                 }
             } else {
                 TextButton(onClick = onDismiss) {
-                    Text("OK")
+                    Text(stringResource(R.string.ok))
                 }
             }
         },
         dismissButton = if (isDisabled) {
-            { TextButton(onClick = onDismiss) { Text("Dismiss") } }
+            { TextButton(onClick = onDismiss) { Text(stringResource(R.string.dismiss)) } }
         } else null,
     )
 }

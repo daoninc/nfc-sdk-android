@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- ── App-wide common ──────────────────────────────────────────────── -->
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="dismiss">Dismiss</string>
+    <string name="value_yes">Yes</string>
+    <string name="value_no">No</string>
+
+    <!-- ── ScanScreen ───────────────────────────────────────────────────── -->
+    <string name="start_nfc_scan">Start NFC Scan</string>
+    <string name="error_invalid_input_title">Invalid input</string>
+    <string name="error_document_number_length">Document number must be between 1 and 9 characters.</string>
+    <string name="error_date_of_birth_required">Please select a date of birth.</string>
+    <string name="error_date_of_expiry_required">Please select a date of expiry.</string>
+
+    <!-- ── ScanScreenHeader ─────────────────────────────────────────────── -->
+    <string name="content_description_daon_logo">Daon logo</string>
+    <string name="scan_screen_title">Passport NFC Reader</string>
+    <string name="scan_screen_subtitle">Enter your document details to begin scanning</string>
+
+    <!-- ── DocumentFormCard ─────────────────────────────────────────────── -->
+    <string name="label_document_number">Document Number</string>
+    <string name="label_date_of_birth">Date of Birth</string>
+    <string name="content_description_select_date_of_birth">Select date of birth</string>
+    <string name="label_date_of_expiry">Date of Expiry</string>
+    <string name="content_description_select_date_of_expiry">Select date of expiry</string>
+    <string name="label_active_authentication">Active Authentication</string>
+    <string name="label_active_authentication_description">Sends a random challenge to the chip</string>
+    <string name="label_encryption_algorithm">Encryption Algorithm</string>
+    <string name="encryption_algorithm_default">Default</string>
+    <string name="encryption_algorithm_sha1">SHA1</string>
+
+    <!-- ── NfcUnavailableDialog ─────────────────────────────────────────── -->
+    <string name="nfc_dialog_title_disabled">NFC disabled</string>
+    <string name="nfc_dialog_title_not_supported">NFC not supported</string>
+    <string name="nfc_dialog_message_disabled">NFC is turned off. Please enable NFC in Settings to scan your document.</string>
+    <string name="nfc_dialog_message_not_supported">This device does not have NFC hardware. NFC is required to read passport chips.</string>
+    <string name="nfc_dialog_button_open_settings">Open Settings</string>
+
+    <!-- ── NfcScanDialog ────────────────────────────────────────────────── -->
+    <string name="nfc_scan_state_in_progress">Scanning\u2026</string>
+    <string name="nfc_scan_state_success">Scan complete</string>
+    <string name="nfc_scan_state_failed">Scan failed</string>
+    <string name="button_view_results">View Results</string>
+    <string name="button_try_again">Try Again</string>
+
+    <!-- ── NfcPulsingIndicator ──────────────────────────────────────────── -->
+    <string name="content_description_nfc_icon">NFC</string>
+
+    <!-- ── ScanStateIcon ────────────────────────────────────────────────── -->
+    <string name="content_description_scan_success">Success</string>
+    <string name="content_description_scan_failed">Failed</string>
+
+    <!-- ── ResultScreen ─────────────────────────────────────────────────── -->
+    <string name="button_scan_again">Scan Again</string>
+
+    <!-- ── ResultScreenHeader ───────────────────────────────────────────── -->
+    <string name="result_screen_title">Scan Results</string>
+    <string name="result_screen_subtitle">Passport data successfully read</string>
+
+    <!-- ── PassportDataCard ─────────────────────────────────────────────── -->
+    <string name="label_face_image">FACE IMAGE</string>
+    <string name="content_description_face_photo">Face photo</string>
+    <string name="data_label_first_name">First Name</string>
+    <string name="data_label_last_name">Last Name</string>
+    <string name="data_label_document_code">Document Code</string>
+    <string name="data_label_document_type">Document Type</string>
+    <string name="data_label_personal_number">Personal Number</string>
+    <string name="data_label_nationality">Nationality</string>
+    <string name="data_label_issuing_state">Issuing State</string>
+    <string name="data_label_gender">Gender</string>
+    <string name="data_label_date_of_issue">Date of Issue</string>
+    <string name="data_label_place_of_birth">Place of Birth</string>
+    <string name="data_label_address">Address</string>
+    <string name="data_label_other_document_numbers">Other Document Numbers</string>
+    <string name="data_label_issuing_authority">Issuing Authority</string>
+    <string name="data_label_certificate_verified">Certificate Verified</string>
+    <string name="data_label_document_expired">Document Expired</string>
+    <string name="data_label_mrz">MRZ</string>
+
+    <!-- ── PassportIssuesSection ────────────────────────────────────────── -->
+    <string name="label_issues_divider">Issues</string>
+    <string name="label_issue_fallback">Issue</string>
+
+</resources>

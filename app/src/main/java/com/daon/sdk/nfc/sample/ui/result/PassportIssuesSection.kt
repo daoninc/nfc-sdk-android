@@ -18,7 +18,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import com.daon.sdk.nfc.TagIssue
+import com.daon.sdk.nfc.sample.R
 import com.daon.sdk.nfc.sample.ui.theme.AppDimens
 
 /**
@@ -37,7 +39,7 @@ internal fun IssuesDivider() {
             color = MaterialTheme.colorScheme.outlineVariant,
         )
         Text(
-            text = "Issues",
+            text = stringResource(R.string.label_issues_divider),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -104,7 +106,7 @@ private fun IssueRow(issue: TagIssue) {
                 .padding(top = AppDimens.IssueIconTopPadding),
         )
         Text(
-            text = issue.message ?: "Issue",
+            text = issue.message ?: stringResource(R.string.label_issue_fallback),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onErrorContainer,
         )

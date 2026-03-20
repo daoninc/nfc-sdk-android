@@ -26,10 +26,12 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import com.daon.sdk.nfc.sample.NfcScanState
 import com.daon.sdk.nfc.sample.NfcUiState
+import com.daon.sdk.nfc.sample.R
 import com.daon.sdk.nfc.sample.ui.theme.AppDimens
 
 /**
@@ -96,9 +98,9 @@ fun NfcScanDialog(
             ) { state ->
                 Text(
                     text = when (state) {
-                        NfcScanState.IN_PROGRESS -> "Scanning…"
-                        NfcScanState.SUCCESS     -> "Scan complete"
-                        NfcScanState.FAIL        -> "Scan failed"
+                        NfcScanState.IN_PROGRESS -> stringResource(R.string.nfc_scan_state_in_progress)
+                        NfcScanState.SUCCESS     -> stringResource(R.string.nfc_scan_state_success)
+                        NfcScanState.FAIL        -> stringResource(R.string.nfc_scan_state_failed)
                     },
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
@@ -149,7 +151,7 @@ fun NfcScanDialog(
                                 .fillMaxWidth()
                                 .height(AppDimens.ButtonHeight),
                         ) {
-                            Text("View Results")
+                            Text(stringResource(R.string.button_view_results))
                         }
                     }
 
@@ -164,7 +166,7 @@ fun NfcScanDialog(
                                     .weight(1f)
                                     .height(AppDimens.ButtonHeight),
                             ) {
-                                Text("Cancel")
+                                Text(stringResource(R.string.cancel))
                             }
                             Button(
                                 onClick = onRetry,
@@ -175,7 +177,7 @@ fun NfcScanDialog(
                                     containerColor = MaterialTheme.colorScheme.primary,
                                 ),
                             ) {
-                                Text("Try Again")
+                                Text(stringResource(R.string.button_try_again))
                             }
                         }
                     }

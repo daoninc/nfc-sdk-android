@@ -19,7 +19,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import com.daon.sdk.nfc.sample.R
 import com.daon.sdk.nfc.sample.ui.theme.AppDimens
 import com.daon.sdk.nfc.reader.passport.PassportData
 import java.text.SimpleDateFormat
@@ -50,7 +52,7 @@ internal fun FaceImageCard(photo: Bitmap) {
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                text = "FACE IMAGE",
+                text = stringResource(R.string.label_face_image),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.fillMaxWidth(),
@@ -60,7 +62,7 @@ internal fun FaceImageCard(photo: Bitmap) {
 
             Image(
                 bitmap = photo.asImageBitmap(),
-                contentDescription = "Face photo",
+                contentDescription = stringResource(R.string.content_description_face_photo),
                 modifier = Modifier
                     .height(AppDimens.FaceImageHeight)
                     .clip(RoundedCornerShape(AppDimens.CornerSmall)),
@@ -133,34 +135,57 @@ private fun DataRow(label: String, value: String) {
  * Builds the ordered list of label-value pairs to display from [data].
  * Only non-null, non-blank, and non-"NA" values are included.
  */
+@Composable
 internal fun buildDataRows(data: PassportData?): List<Pair<String, String>> {
     if (data == null) return emptyList()
 
     val dateFormat = SimpleDateFormat("MMM d, yyyy", Locale.US)
 
+    val labelFirstName = stringResource(R.string.data_label_first_name)
+    val labelLastName = stringResource(R.string.data_label_last_name)
+    val labelDocumentNumber = stringResource(R.string.label_document_number)
+    val labelDocumentCode = stringResource(R.string.data_label_document_code)
+    val labelDocumentType = stringResource(R.string.data_label_document_type)
+    val labelPersonalNumber = stringResource(R.string.data_label_personal_number)
+    val labelNationality = stringResource(R.string.data_label_nationality)
+    val labelIssuingState = stringResource(R.string.data_label_issuing_state)
+    val labelGender = stringResource(R.string.data_label_gender)
+    val labelDateOfBirth = stringResource(R.string.label_date_of_birth)
+    val labelDateOfExpiry = stringResource(R.string.label_date_of_expiry)
+    val labelDateOfIssue = stringResource(R.string.data_label_date_of_issue)
+    val labelPlaceOfBirth = stringResource(R.string.data_label_place_of_birth)
+    val labelAddress = stringResource(R.string.data_label_address)
+    val labelOtherDocumentNumbers = stringResource(R.string.data_label_other_document_numbers)
+    val labelIssuingAuthority = stringResource(R.string.data_label_issuing_authority)
+    val labelCertificateVerified = stringResource(R.string.data_label_certificate_verified)
+    val labelDocumentExpired = stringResource(R.string.data_label_document_expired)
+    val labelMrz = stringResource(R.string.data_label_mrz)
+    val valueYes = stringResource(R.string.value_yes)
+    val valueNo = stringResource(R.string.value_no)
+
     return buildList {
-        data.firstName.meaningful()?.let { add("First Name" to it) }
-        data.lastName.meaningful()?.let { add("Last Name" to it) }
-        data.documentNumber.meaningful()?.let { add("Document Number" to it) }
-        data.documentCode.meaningful()?.let { add("Document Code" to it) }
-        data.documentType.meaningful()?.let { add("Document Type" to it) }
-        data.personalNumber.meaningful()?.let { add("Personal Number" to it) }
-        data.nationality.meaningful()?.let { add("Nationality" to it) }
-        data.state.meaningful()?.let { add("Issuing State" to it) }
-        data.gender.meaningful()?.let { add("Gender" to it) }
-        data.dateOfBirth?.let { add("Date of Birth" to dateFormat.format(it)) }
-        data.dateOfExpiry?.let { add("Date of Expiry" to dateFormat.format(it)) }
-        data.dateOfIssue?.let { add("Date of Issue" to dateFormat.format(it)) }
-        data.placeOfBirth.meaningful()?.let { add("Place of Birth" to it) }
-        data.address.meaningful()?.let { add("Address" to it) }
-        data.documentNumbers.meaningful()?.let { add("Other Document Numbers" to it) }
-        data.issuingAuthority.meaningful()?.let { add("Issuing Authority" to it) }
+        data.firstName.meaningful()?.let { add(labelFirstName to it) }
+        data.lastName.meaningful()?.let { add(labelLastName to it) }
+        data.documentNumber.meaningful()?.let { add(labelDocumentNumber to it) }
+        data.documentCode.meaningful()?.let { add(labelDocumentCode to it) }
+        data.documentType.meaningful()?.let { add(labelDocumentType to it) }
+        data.personalNumber.meaningful()?.let { add(labelPersonalNumber to it) }
+        data.nationality.meaningful()?.let { add(labelNationality to it) }
+        data.state.meaningful()?.let { add(labelIssuingState to it) }
+        data.gender.meaningful()?.let { add(labelGender to it) }
+        data.dateOfBirth?.let { add(labelDateOfBirth to dateFormat.format(it)) }
+        data.dateOfExpiry?.let { add(labelDateOfExpiry to dateFormat.format(it)) }
+        data.dateOfIssue?.let { add(labelDateOfIssue to dateFormat.format(it)) }
+        data.placeOfBirth.meaningful()?.let { add(labelPlaceOfBirth to it) }
+        data.address.meaningful()?.let { add(labelAddress to it) }
+        data.documentNumbers.meaningful()?.let { add(labelOtherDocumentNumbers to it) }
+        data.issuingAuthority.meaningful()?.let { add(labelIssuingAuthority to it) }
         // Only include certificate status when a certificate was actually present.
         if (data.certificate != null) {
-            add("Certificate Verified" to if (data.isCertificateVerified) "Yes" else "No")
+            add(labelCertificateVerified to if (data.isCertificateVerified) valueYes else valueNo)
         }
-        add("Document Expired" to if (data.isExpired) "Yes" else "No")
-        data.mrz.meaningful()?.let { add("MRZ" to it) }
+        add(labelDocumentExpired to if (data.isExpired) valueYes else valueNo)
+        data.mrz.meaningful()?.let { add(labelMrz to it) }
     }
 }
 
