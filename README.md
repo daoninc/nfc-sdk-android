@@ -1,4 +1,4 @@
-# nfc-sdk-android
+# NFC Reader Sample App
 
 A sample Android application demonstrating how to integrate Daon's NFC SDK to read NFC-chipped travel documents such as biometric passports (ICAO 9303 compliant). The app guides a user through entering their document credentials, then reads the chip over NFC and displays the extracted passport data — including the face photograph — alongside any validation issues.
 
