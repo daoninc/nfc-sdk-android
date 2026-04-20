@@ -47,13 +47,23 @@ nfc-sdk-android/
 │       │   │   ├── MainActivity.kt          # Single-activity host; NFC lifecycle bridge
 │       │   │   ├── NfcViewModel.kt          # MVVM ViewModel; owns NFCReader; all SDK state
 │       │   │   └── ui/
-│       │   │       ├── ScanScreen.kt        # Input form (doc number, DOB, DOE)
-│       │   │       ├── ResultScreen.kt      # Passport data display after a successful read
-│       │   │       ├── NfcScanDialog.kt     # Animated bottom-sheet scan progress dialog
+│       │   │       ├── scan/
+│       │   │       │   ├── ScanScreen.kt          # Input form (doc number, DOB, DOE)
+│       │   │       │   ├── NfcScanDialog.kt       # Animated bottom-sheet scan progress dialog
+│       │   │       │   ├── NfcUnavailableDialog.kt# Alert shown when NFC is off or unsupported
+│       │   │       │   ├── NfcPulsingIndicator.kt # Animated NFC ripple indicator
+│       │   │       │   ├── ScanStateIcon.kt       # Animated icon for scan states
+│       │   │       │   ├── ScanScreenHeader.kt    # Header composable for the scan screen
+│       │   │       │   └── DocumentFormCard.kt    # Passport credential input card
+│       │   │       ├── result/
+│       │   │       │   ├── ResultScreen.kt        # Passport data display after a successful read
+│       │   │       │   ├── PassportDataCard.kt    # Individual passport field display card
+│       │   │       │   ├── PassportIssuesSection.kt # Validation issues list
+│       │   │       │   └── ResultScreenHeader.kt  # Header composable for the result screen
 │       │   │       └── theme/
-│       │   │           ├── Theme.kt         # Material 3 light/dark colour schemes
-│       │   │           └── Dimensions.kt    # Centralised dimension token system (AppDimens)
-│       │   └── res/                         # Drawables, launcher icons, strings
+│       │   │           ├── Theme.kt               # Material 3 light/dark colour schemes
+│       │   │           └── Dimensions.kt          # Centralised dimension token system (AppDimens)
+│       │   └── res/                               # Drawables, launcher icons, strings
 │       └── test/
 │           └── java/com/daon/sdk/nfc/sample/
 │               ├── NfcViewModelTest.kt      # ViewModel state-machine unit tests
@@ -62,8 +72,10 @@ nfc-sdk-android/
 ├── build.gradle                   # Top-level build file; classpath dependencies
 ├── settings.gradle                # Module list; Maven repository configuration
 ├── gradle.properties              # JVM args, AndroidX flags, signing properties path
-└── gradle/wrapper/
-    └── gradle-wrapper.properties  # Gradle 8.14.3 distribution
+└── gradle/
+    ├── libs.versions.toml         # Version catalog — all dependency versions and aliases
+    └── wrapper/
+        └── gradle-wrapper.properties  # Gradle 8.14.3 distribution
 ```
 
 ---
@@ -88,6 +100,7 @@ NfcViewModel (AndroidViewModel)
    │    tagReaderInformation  →  IN_PROGRESS + progress value
    │    tagReaderDidFinish    →  SUCCESS + TagData result
    │    tagReaderFailed       →  FAIL + mapped error message
+   │                             (including ERROR_CANCELLED when app is backgrounded)
    ▼
 Compose UI
    ScanScreen          – document credential form + date pickers
@@ -108,7 +121,7 @@ Compose UI
 | Android Gradle Plugin | 8.12.3 |
 | Gradle | 8.14.3 |
 | Kotlin | 2.2.20 |
-| Minimum Android SDK | 21 (Android 5.0) |
+| Minimum Android SDK | 23 (Android 6.0) |
 | Target / Compile SDK | 36 |
 | JVM target | 1.8 |
 
@@ -129,19 +142,16 @@ The Daon NFC SDK (`com.daon.sdk:nfc`) is published to a private GitHub Packages 
 5. Under **Permissions → Repository permissions**, grant **Contents: Read-only**.
 6. Generate and copy the token — it will only be shown once.
 
-### 2. Add credentials to `settings.gradle`
+### 2. Add credentials to `local.properties`
 
-Open `settings.gradle` and update the `maven` block inside `dependencyResolutionManagement`:
+Open (or create) `local.properties` in the project root and add:
 
-```groovy
-maven {
-    url = uri("https://maven.pkg.github.com/daoninc/sdk-packages/")
-    credentials {
-        username = "your-github-username"
-        password = "your-fine-grained-token"
-    }
-}
+```properties
+dependencies.username=your-github-username
+dependencies.token=your-fine-grained-token
 ```
+
+`settings.gradle` reads these values at sync time and passes them to the `maven` credentials block. `local.properties` is excluded from source control by `.gitignore`.
 
 ### 3. SDK license file
 
@@ -161,31 +171,23 @@ NFCReader(activity, "license.txt", false)
 
 ## Dependencies
 
+All dependency versions are centralised in `gradle/libs.versions.toml`. The `app/build.gradle` references them via Gradle version catalog accessors (`libs.*`).
+
 ### Daon NFC SDK
 
 | Artifact | Version  | Purpose |
 |---|----------|---|
-| `com.daon.sdk:nfc` | `1.3.57` | Core NFC passport reading library |
-
-### NFC SDK transitive dependencies
-
-These libraries are required by the Daon NFC SDK and must be declared explicitly in the app's `build.gradle`. BouncyCastle `jdk15on` variants are excluded to avoid duplication with the `jdk18on` variant used here.
-
-| Artifact | Version | Purpose |
-|---|---|---|
-| `org.jmrtd:jmrtd` | `0.8.2` | Java Machine Readable Travel Documents — ICAO LDS parsing |
-| `net.sf.scuba:scuba-sc-android` | `0.0.26` | Smart card USB/NFC low-level communication |
-| `org.bouncycastle:bcprov-jdk18on` | `1.82` | Cryptography provider for BAC/PACE and chip authentication |
+| `com.daon.sdk:nfc` | `1.4.2` | Core NFC passport reading library |
 
 ### AndroidX
 
 | Artifact | Version | Purpose |
 |---|---|---|
-| `androidx.core:core-ktx` | `1.16.0` | Kotlin extensions for core Android APIs |
-| `androidx.activity:activity-compose` | `1.10.1` | Compose integration for `ComponentActivity` |
-| `androidx.fragment:fragment-ktx` | `1.8.8` | Fragment Kotlin extensions (required by `FragmentActivity`) |
-| `androidx.lifecycle:lifecycle-viewmodel-compose` | `2.9.1` | `viewModel()` and `collectAsStateWithLifecycle()` helpers |
-| `androidx.lifecycle:lifecycle-runtime-ktx` | `2.9.1` | `lifecycleScope` and `repeatOnLifecycle` coroutine extensions |
+| `androidx.core:core-ktx` | `1.18.0` | Kotlin extensions for core Android APIs |
+| `androidx.activity:activity-compose` | `1.13.0` | Compose integration for `ComponentActivity` |
+| `androidx.fragment:fragment-ktx` | `1.8.9` | Fragment Kotlin extensions (required by `FragmentActivity`) |
+| `androidx.lifecycle:lifecycle-viewmodel-compose` | `2.10.0` | `viewModel()` and `collectAsStateWithLifecycle()` helpers |
+| `androidx.lifecycle:lifecycle-runtime-ktx` | `2.10.0` | `lifecycleScope` and `repeatOnLifecycle` coroutine extensions |
 
 ### Jetpack Compose
 
@@ -193,7 +195,7 @@ The Compose dependency versions are managed via the BOM:
 
 | Artifact | Version / BOM | Purpose |
 |---|---|---|
-| `androidx.compose:compose-bom` | `2024.12.01` | BOM that aligns all Compose library versions |
+| `androidx.compose:compose-bom` | `2026.03.01` | BOM that aligns all Compose library versions |
 | `androidx.compose.ui:ui` | (BOM) | Core Compose UI toolkit |
 | `androidx.compose.ui:ui-tooling-preview` | (BOM) | `@Preview` composable support |
 | `androidx.compose.material3:material3` | (BOM) | Material Design 3 components and theming |
@@ -205,8 +207,8 @@ The Compose dependency versions are managed via the BOM:
 | Artifact | Version | Purpose |
 |---|---|---|
 | `junit:junit` | `4.13.2` | JUnit 4 test runner |
-| `org.jetbrains.kotlinx:kotlinx-coroutines-test` | `1.8.1` | `StandardTestDispatcher` / `runTest` for coroutine testing |
-| `io.mockk:mockk` | `1.13.12` | Kotlin-idiomatic mocking library |
+| `org.jetbrains.kotlinx:kotlinx-coroutines-test` | `1.10.2` | `StandardTestDispatcher` / `runTest` for coroutine testing |
+| `io.mockk:mockk` | `1.14.9` | Kotlin-idiomatic mocking library |
 
 ### Build plugins
 
