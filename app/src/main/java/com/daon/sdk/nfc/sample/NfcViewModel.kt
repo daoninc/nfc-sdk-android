@@ -89,23 +89,37 @@ class NfcViewModel(application: Application) : AndroidViewModel(application) {
     private val tagReaderCallback = object : TagReaderCallback {
         override fun tagReaderDidFinish(data: TagData) {
             Log.d("DAON", "tagReaderDidFinish: ${data.toJSON()}")
+            nfcReader?.disable()
             _uiState.value = NfcUiState(
                 scanState = NfcScanState.SUCCESS,
-                message = "Scan complete",
+                message = getApplication<Application>().getString(R.string.nfc_status_scan_complete),
                 result = data,
             )
         }
 
         override fun tagReaderFailed(code: Short, message: String?) {
             Log.d("DAON", "tagReaderFailed: $message")
-            val errorMessage = when (code) {
-                TagError.ERROR_NO_ACCESS -> "Authentication failed. Check document details."
-                TagError.ERROR_TAG_NOT_SUPPORTED -> "NFC tag not supported."
-                TagError.ERROR_NO_DATA,
-                TagError.ERROR_NOT_IMPLEMENTED -> "Unable to read document data."
-                TagError.ERROR_LICENSE -> "License error: $message"
-                else -> "NFC read failed. Please try again."
+            if (code == TagError.ERROR_CANCELLED) {
+                // Scan was interrupted (e.g. app backgrounded). Keep the dialog visible
+                // and show the failure state so the user sees it on return to foreground.
+                if (_dialogVisible.value) {
+                    nfcReader?.disable()
+                    _uiState.value = NfcUiState(
+                        scanState = NfcScanState.FAIL,
+                        message = getApplication<Application>().getString(R.string.nfc_error_read_failed),
+                    )
+                }
+                return
             }
+            val errorMessage = when (code) {
+                TagError.ERROR_NO_ACCESS -> getApplication<Application>().getString(R.string.nfc_error_authentication_failed)
+                TagError.ERROR_TAG_NOT_SUPPORTED -> getApplication<Application>().getString(R.string.nfc_error_tag_not_supported)
+                TagError.ERROR_NO_DATA,
+                TagError.ERROR_NOT_IMPLEMENTED -> getApplication<Application>().getString(R.string.nfc_error_unable_to_read)
+                TagError.ERROR_LICENSE -> getApplication<Application>().getString(R.string.nfc_error_license, message.orEmpty())
+                else -> getApplication<Application>().getString(R.string.nfc_error_read_failed)
+            }
+            nfcReader?.disable()
             _uiState.value = NfcUiState(scanState = NfcScanState.FAIL, message = errorMessage)
         }
 
@@ -161,7 +175,7 @@ class NfcViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
         pendingParams = params
-        _uiState.value = NfcUiState(scanState = NfcScanState.IN_PROGRESS, message = "Hold your device near the document.")
+        _uiState.value = NfcUiState(scanState = NfcScanState.IN_PROGRESS, message = getApplication<Application>().getString(R.string.nfc_status_hold_near_document))
         _dialogVisible.value = true
         reader?.enable()
     }
@@ -194,7 +208,7 @@ class NfcViewModel(application: Application) : AndroidViewModel(application) {
         if (pendingParams == null) return
         _uiState.value = NfcUiState(
             scanState = NfcScanState.IN_PROGRESS,
-            message = "Hold your device near the document.",
+            message = getApplication<Application>().getString(R.string.nfc_status_hold_near_document),
         )
         nfcReader?.enable()
     }
@@ -204,7 +218,6 @@ class NfcViewModel(application: Application) : AndroidViewModel(application) {
      * Should be called when the user taps "Done" after a successful scan.
      */
     fun showResults() {
-        nfcReader?.disable()
         _dialogVisible.value = false
         _showResult.value = true
     }
@@ -244,6 +257,9 @@ class NfcViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun onNewIntent(intent: Intent?) {
         val params = pendingParams ?: return
+        if (_uiState.value.scanState != NfcScanState.IN_PROGRESS) {
+            return
+        }
         nfcReader?.read(intent, params, tagReaderCallback)
     }
 }

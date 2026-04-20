@@ -9,6 +9,12 @@ pluginManagement {
     }
 }
 
+def localProperties = new Properties()
+def localPropertiesFile = new File(rootDir, "local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withInputStream { localProperties.load(it) }
+}
+
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
@@ -20,8 +26,8 @@ dependencyResolutionManagement {
         maven {
             url = uri("https://maven.pkg.github.com/daoninc/sdk-packages/")
             credentials {
-                username = "your-github-username"
-                password = "your-fine-grained-token"
+                username = localProperties.getProperty("dependencies.username")
+                password = localProperties.getProperty("dependencies.token")
             }
         }
     }

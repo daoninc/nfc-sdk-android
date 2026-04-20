@@ -84,4 +84,13 @@
     <string name="label_issues_divider">Issues</string>
     <string name="label_issue_fallback">Issue</string>
 
+    <!-- ── NfcViewModel ─────────────────────────────────────────────────── -->
+    <string name="nfc_status_scan_complete">Scan complete</string>
+    <string name="nfc_status_hold_near_document">Hold your device near the document.</string>
+    <string name="nfc_error_authentication_failed">Authentication failed. Check document details.</string>
+    <string name="nfc_error_tag_not_supported">NFC tag not supported.</string>
+    <string name="nfc_error_unable_to_read">Unable to read document data.</string>
+    <string name="nfc_error_license">License error: %s</string>
+    <string name="nfc_error_read_failed">NFC read failed. Please try again.</string>
+
 </resources>
