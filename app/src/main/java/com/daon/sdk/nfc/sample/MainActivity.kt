@@ -17,8 +17,9 @@ import com.daon.sdk.nfc.sample.ui.theme.NfcSdkAndroidTheme
  * Single-activity host for the integration sample.
  *
  * Responsibilities:
- * - Initialises [NfcViewModel] with a reference to this activity so that
- *   [com.daon.sdk.nfc.NFCReader] can register foreground NFC dispatch.
+ * - Initialises (and re-initialises after configuration changes) [NfcViewModel] with a
+ *   reference to this activity so that [com.daon.sdk.nfc.NFCReader] always holds a live
+ *   activity instance for NFC foreground dispatch registration.
  * - Forwards [onNewIntent] to the ViewModel when the NFC system delivers a tag.
  * - Forwards [onResume] / [onPause] lifecycle events to the ViewModel so the
  *   reader is enabled/disabled at the correct times.

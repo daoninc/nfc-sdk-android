@@ -26,8 +26,8 @@ dependencyResolutionManagement {
         maven {
             url = uri("https://maven.pkg.github.com/daoninc/sdk-packages/")
             credentials {
-                username = localProperties.getProperty("dependencies.username")
-                password = localProperties.getProperty("dependencies.token")
+                username = localProperties.getProperty("daon.repository.username")
+                password = localProperties.getProperty("daon.repository.token")
             }
         }
     }

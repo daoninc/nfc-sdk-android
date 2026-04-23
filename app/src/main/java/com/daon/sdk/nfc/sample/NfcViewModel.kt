@@ -82,6 +82,8 @@ class NfcViewModel(application: Application) : AndroidViewModel(application) {
     internal var nfcReader: NFCReader? = null
     private var pendingParams: PassportParameters? = null
 
+    private var isActivityResumed = false
+
     // TagReaderCallback implementation forwarded from the Activity's onNewIntent.
     private val tagReaderCallback = object : TagReaderCallback {
         override fun tagReaderDidFinish(data: TagData) {
@@ -134,16 +136,21 @@ class NfcViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
-     * Initialises the [NFCReader] using the given [activity].
-     * Must be called from [MainActivity.onCreate] before any NFC operation.
+     * Creates (or re-creates) the [NFCReader] bound to the given [activity].
+     * Must be called on every [MainActivity.onCreate] — including after a
+     * configuration change — so that the reader always holds a reference to
+     * the current, live activity instance.
+     *
+     * Keeping a stale reference from a previous (destroyed) activity causes
+     * [NfcAdapter.enableForegroundDispatch] to throw [IllegalStateException]
+     * on Android 11–14, because the platform verifies that the activity passed
+     * to that API is the currently resumed foreground activity.
      *
      * @param activity The hosting [androidx.fragment.app.FragmentActivity].
      */
     fun initReader(activity: androidx.fragment.app.FragmentActivity) {
-        if (nfcReader == null) {
-            nfcReader = NFCReader(activity, "license.txt", false)
-            Log.d("DAON", "NFCReader initialised — SDK version: ${NFCReader.version()}")
-        }
+        nfcReader = NFCReader(activity, "license.txt", false)
+        Log.d("DAON", "NFCReader initialised — SDK version: ${NFCReader.version()}")
     }
 
     /**
@@ -174,7 +181,8 @@ class NfcViewModel(application: Application) : AndroidViewModel(application) {
         pendingParams = params
         _uiState.value = NfcUiState(scanState = NfcScanState.IN_PROGRESS, message = getApplication<Application>().getString(R.string.nfc_status_hold_near_document))
         _dialogVisible.value = true
-        reader?.enable()
+
+        if (isActivityResumed) reader?.enable()
     }
 
     /**
@@ -233,6 +241,7 @@ class NfcViewModel(application: Application) : AndroidViewModel(application) {
      * Call from [MainActivity.onPause].
      */
     fun disableReader() {
+        isActivityResumed = false
         nfcReader?.disable()
     }
 
@@ -241,6 +250,7 @@ class NfcViewModel(application: Application) : AndroidViewModel(application) {
      * Call from [MainActivity.onResume].
      */
     fun resumeReader() {
+        isActivityResumed = true
         if (_dialogVisible.value) {
             nfcReader?.enable()
         }
