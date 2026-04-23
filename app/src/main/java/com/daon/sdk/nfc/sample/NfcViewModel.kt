@@ -25,9 +25,6 @@ enum class NfcScanState {
  * [com.daon.sdk.nfc.NFCReader.isEnabled] APIs.
  */
 enum class NfcAvailability {
-    /** NFC hardware is present and enabled — scanning can proceed. */
-    AVAILABLE,
-
     /** The device has no NFC hardware ([NFCReader.isSupported] returned false). */
     NOT_SUPPORTED,
 

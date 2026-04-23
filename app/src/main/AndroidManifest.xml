@@ -3,11 +3,6 @@
 
     <!-- NFC hardware access — normal permission, no runtime request needed. -->
     <uses-permission android:name="android.permission.NFC" />
-    <!--
-        Mark NFC as not strictly required so the app can be installed on devices without it.
-        NfcViewModel.startScan() uses NFCReader.isSupported() to handle the no-hardware case.
-    -->
-    <uses-feature android:name="android.hardware.nfc" android:required="false" />
 
     <application
         android:label="Daon NFC Sample App"
@@ -20,8 +15,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:launchMode="singleTop"
-            android:screenOrientation="portrait">
+            android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

@@ -24,28 +24,33 @@ import com.daon.sdk.nfc.sample.ui.theme.AppDimens
 
 /**
  * Centred header for [ScanScreen]: the Daon logo, a bold title, and a short subtitle.
+ *
+ * @param compact When `true` the logo container is hidden, saving vertical space in
+ *   landscape where the available height is limited.
  */
 @Composable
-internal fun ScanScreenHeader() {
+internal fun ScanScreenHeader(compact: Boolean = false) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Surface(
-            shape = RoundedCornerShape(AppDimens.CornerLarge),
-            color = Color.Transparent,
-            modifier = Modifier.size(AppDimens.LogoContainerSize),
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Image(
-                    painter = painterResource(R.drawable.daon_label_logo),
-                    contentDescription = stringResource(R.string.content_description_daon_logo),
-                    modifier = Modifier.size(AppDimens.LogoIconSize),
-                )
+        if (!compact) {
+            Surface(
+                shape = RoundedCornerShape(AppDimens.CornerLarge),
+                color = Color.Transparent,
+                modifier = Modifier.size(AppDimens.LogoContainerSize),
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Image(
+                        painter = painterResource(R.drawable.daon_label_logo),
+                        contentDescription = stringResource(R.string.content_description_daon_logo),
+                        modifier = Modifier.size(AppDimens.LogoIconSize),
+                    )
+                }
             }
-        }
 
-        Spacer(Modifier.height(AppDimens.SpacingLarge))
+            Spacer(Modifier.height(AppDimens.SpacingLarge))
+        }
 
         Text(
             text = stringResource(R.string.scan_screen_title),

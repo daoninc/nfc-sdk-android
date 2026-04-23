@@ -1,9 +1,12 @@
 package com.daon.sdk.nfc.sample.ui.scan
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -23,11 +26,16 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import com.daon.sdk.nfc.sample.NfcViewModel
@@ -47,6 +55,9 @@ import java.util.TimeZone
  * a validation-error [AlertDialog], [NfcUnavailableDialog], and [NfcScanDialog].
  * All form-field state is hoisted here so the scan button can read it directly.
  *
+ * In landscape the layout splits into two panes: the header on the left and the
+ * scrollable form + button on the right. In portrait a single centred column is used.
+ *
  * @param viewModel The [NfcViewModel] shared with
  *   [com.daon.sdk.nfc.sample.MainActivity].
  */
@@ -57,95 +68,168 @@ fun ScanScreen(viewModel: NfcViewModel) {
     val uiState by viewModel.uiState.collectAsState()
     val nfcAvailability by viewModel.nfcAvailability.collectAsState()
 
-    var documentNumber by remember { mutableStateOf("") }
-    var dateOfBirthMillis by remember { mutableStateOf<Long?>(null) }
-    var dateOfExpiryMillis by remember { mutableStateOf<Long?>(null) }
-    var validationError by remember { mutableStateOf<String?>(null) }
-    var enableActiveAuthentication by remember { mutableStateOf(false) }
-    var encryptionAlgorithm by remember { mutableStateOf(EncryptionAlgorithm.DEFAULT) }
+    var documentNumber by rememberSaveable { mutableStateOf("") }
+    var dateOfBirthMillis by rememberSaveable { mutableStateOf<Long?>(null) }
+    var dateOfExpiryMillis by rememberSaveable { mutableStateOf<Long?>(null) }
+    var validationError by rememberSaveable { mutableStateOf<String?>(null) }
+    var enableActiveAuthentication by rememberSaveable { mutableStateOf(false) }
+    var encryptionAlgorithm by rememberSaveable { mutableStateOf(EncryptionAlgorithm.DEFAULT) }
 
     val errDocNum = stringResource(R.string.error_document_number_length)
     val errDob = stringResource(R.string.error_date_of_birth_required)
     val errDoe = stringResource(R.string.error_date_of_expiry_required)
 
+    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+
+    // Shared scan button click handler.
+    val onScanClick = {
+        val dobShort = dateOfBirthMillis?.let { formatShortDate(it) }
+        val doeShort = dateOfExpiryMillis?.let { formatShortDate(it) }
+        val error = validate(documentNumber, dobShort, doeShort, errDocNum, errDob, errDoe)
+        if (error != null) {
+            validationError = error
+        } else {
+            val params = PassportParameters(documentNumber, dobShort!!, doeShort!!)
+            params.enablePhoto(true)
+            params.enableRawData(true)
+            if (enableActiveAuthentication) {
+                params.setChallenge(generateNonce())
+            }
+            if (encryptionAlgorithm == EncryptionAlgorithm.SHA1) {
+                params.setSignatureAlgorithm("SHA1WithRSA/ISO9796-2")
+                params.setDigestAlgorithm("SHA1")
+            }
+            viewModel.startScan(params)
+        }
+        Unit
+    }
+
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
     ) { innerPadding ->
-        // BoxWithConstraints lets the inner Column use min-height = screen height so
-        // Arrangement.Center works while verticalScroll handles small screens / keyboards.
-        BoxWithConstraints(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            contentAlignment = Alignment.TopCenter,
-        ) {
-            val screenHeight = maxHeight
-            Column(
+        if (isLandscape) {
+            // ── Landscape: header left | form + button right ──────────────────
+            Row(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = screenHeight)
-                    .verticalScroll(rememberScrollState())
-                    .padding(
-                        horizontal = AppDimens.ScreenPaddingHorizontal,
-                        vertical = AppDimens.SpacingHuge,
-                    ),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .padding(horizontal = AppDimens.ScreenPaddingHorizontal),
+                horizontalArrangement = Arrangement.spacedBy(AppDimens.SpacingXXLarge),
             ) {
-                ScanScreenHeader()
+                // Left pane — compact header centred vertically.
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    ScanScreenHeader(compact = true)
+                }
 
-                Spacer(Modifier.height(AppDimens.SpacingXXLarge))
+                // Right pane — form card + button, scrollable.
+                Column(
+                    modifier = Modifier
+                        .weight(1.5f)
+                        .fillMaxHeight()
+                        .verticalScroll(rememberScrollState())
+                        .padding(vertical = AppDimens.SpacingLarge),
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    DocumentFormCard(
+                        documentNumber = documentNumber,
+                        onDocumentNumberChange = { documentNumber = it },
+                        dateOfBirthMillis = dateOfBirthMillis,
+                        onDateOfBirthChange = { dateOfBirthMillis = it },
+                        dateOfExpiryMillis = dateOfExpiryMillis,
+                        onDateOfExpiryChange = { dateOfExpiryMillis = it },
+                        enableActiveAuthentication = enableActiveAuthentication,
+                        onActiveAuthChange = { enableActiveAuthentication = it },
+                        encryptionAlgorithm = encryptionAlgorithm,
+                        onEncryptionChange = { encryptionAlgorithm = it },
+                    )
 
-                DocumentFormCard(
-                    documentNumber = documentNumber,
-                    onDocumentNumberChange = { documentNumber = it },
-                    dateOfBirthMillis = dateOfBirthMillis,
-                    onDateOfBirthChange = { dateOfBirthMillis = it },
-                    dateOfExpiryMillis = dateOfExpiryMillis,
-                    onDateOfExpiryChange = { dateOfExpiryMillis = it },
-                    enableActiveAuthentication = enableActiveAuthentication,
-                    onActiveAuthChange = { enableActiveAuthentication = it },
-                    encryptionAlgorithm = encryptionAlgorithm,
-                    onEncryptionChange = { encryptionAlgorithm = it },
-                )
+                    Spacer(Modifier.height(AppDimens.SpacingXLarge))
 
-                Spacer(Modifier.height(AppDimens.SpacingXLarge))
-
-                // ── Primary action button ─────────────────────────────────────
-                Button(
-                    onClick = {
-                        val dobShort = dateOfBirthMillis?.let { formatShortDate(it) }
-                        val doeShort = dateOfExpiryMillis?.let { formatShortDate(it) }
-                        val error = validate(documentNumber, dobShort, doeShort, errDocNum, errDob, errDoe)
-                        if (error != null) {
-                            validationError = error
-                        } else {
-                            val params = PassportParameters(documentNumber, dobShort!!, doeShort!!)
-                            params.enablePhoto(true)
-                            params.enableRawData(true)
-                            if (enableActiveAuthentication) {
-                                params.setChallenge(generateNonce())
-                            }
-                            if (encryptionAlgorithm == EncryptionAlgorithm.SHA1) {
-                                params.setSignatureAlgorithm("SHA1WithRSA/ISO9796-2")
-                                params.setDigestAlgorithm("SHA1")
-                            }
-                            viewModel.startScan(params)
-                        }
-                    },
+                    Button(
+                        onClick = onScanClick,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(AppDimens.ButtonHeight),
+                        shape = RoundedCornerShape(AppDimens.CornerSmall),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                        ),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.start_nfc_scan),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                }
+            }
+        } else {
+            // ── Portrait: centred single column ───────────────────────────────
+            // onSizeChanged captures the available height once the Box is laid out so
+            // the inner Column can use heightIn(min = availableHeight). This keeps
+            // Arrangement.Center working while verticalScroll handles overflow.
+            var availableHeightPx by remember { mutableIntStateOf(0) }
+            val availableHeightDp = with(LocalDensity.current) { availableHeightPx.toDp() }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .onSizeChanged { availableHeightPx = it.height },
+                contentAlignment = Alignment.TopCenter,
+            ) {
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(AppDimens.ButtonHeight),
-                    shape = RoundedCornerShape(AppDimens.CornerSmall),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                    ),
+                        .heightIn(min = availableHeightDp)
+                        .verticalScroll(rememberScrollState())
+                        .padding(
+                            horizontal = AppDimens.ScreenPaddingHorizontal,
+                            vertical = AppDimens.SpacingHuge,
+                        ),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
                 ) {
-                    Text(
-                        text = stringResource(R.string.start_nfc_scan),
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.SemiBold,
+                    ScanScreenHeader()
+
+                    Spacer(Modifier.height(AppDimens.SpacingXXLarge))
+
+                    DocumentFormCard(
+                        documentNumber = documentNumber,
+                        onDocumentNumberChange = { documentNumber = it },
+                        dateOfBirthMillis = dateOfBirthMillis,
+                        onDateOfBirthChange = { dateOfBirthMillis = it },
+                        dateOfExpiryMillis = dateOfExpiryMillis,
+                        onDateOfExpiryChange = { dateOfExpiryMillis = it },
+                        enableActiveAuthentication = enableActiveAuthentication,
+                        onActiveAuthChange = { enableActiveAuthentication = it },
+                        encryptionAlgorithm = encryptionAlgorithm,
+                        onEncryptionChange = { encryptionAlgorithm = it },
                     )
+
+                    Spacer(Modifier.height(AppDimens.SpacingXLarge))
+
+                    Button(
+                        onClick = onScanClick,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(AppDimens.ButtonHeight),
+                        shape = RoundedCornerShape(AppDimens.CornerSmall),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                        ),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.start_nfc_scan),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
                 }
             }
         }

@@ -1,5 +1,6 @@
 package com.daon.sdk.nfc.sample.ui.scan
 
+import android.content.res.Configuration
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -14,6 +15,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -26,9 +29,10 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.res.stringResource
 import com.daon.sdk.nfc.sample.NfcScanState
 import com.daon.sdk.nfc.sample.NfcUiState
 import com.daon.sdk.nfc.sample.R
@@ -42,6 +46,9 @@ import com.daon.sdk.nfc.sample.ui.theme.AppDimens
  *   flowing) a [LinearProgressIndicator].
  * - [NfcScanState.SUCCESS]: [ScanStateIcon] with a check and a **View Results** button.
  * - [NfcScanState.FAIL]: [ScanStateIcon] with an X, a **Try Again** button, and **Cancel**.
+ *
+ * In landscape the indicator box is reduced and the sheet content is scrollable so it
+ * fits within the limited vertical space.
  *
  * @param uiState Current [NfcUiState] to display.
  * @param onDismiss Called when the user cancels (FAIL / swipe-dismiss).
@@ -57,6 +64,8 @@ fun NfcScanDialog(
     onRetry: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val indicatorBoxSize = if (isLandscape) AppDimens.NfcIndicatorBoxSizeCompact else AppDimens.NfcIndicatorBoxSize
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -65,6 +74,7 @@ fun NfcScanDialog(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .padding(
                     horizontal = AppDimens.ScreenPaddingHorizontal,
                     vertical = AppDimens.ScreenPaddingVertical,
@@ -79,10 +89,10 @@ fun NfcScanDialog(
                 transitionSpec = { fadeIn(tween(400)) togetherWith fadeOut(tween(200)) },
                 contentAlignment = Alignment.Center,
                 label = "NfcIconArea",
-                modifier = Modifier.size(AppDimens.NfcIndicatorBoxSize),
+                modifier = Modifier.size(indicatorBoxSize),
             ) { state ->
                 when (state) {
-                    NfcScanState.IN_PROGRESS -> NfcPulsingIndicator()
+                    NfcScanState.IN_PROGRESS -> NfcPulsingIndicator(boxSize = indicatorBoxSize)
                     NfcScanState.SUCCESS     -> ScanStateIcon(success = true)
                     NfcScanState.FAIL        -> ScanStateIcon(success = false)
                 }

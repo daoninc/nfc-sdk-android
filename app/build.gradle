@@ -11,11 +11,11 @@ if (rootProject.file("sensitive.properties").exists()) {
 
 android {
     namespace 'com.daon.sdk.nfc.sample'
-    compileSdk 36
+    compileSdk = 36
 
     defaultConfig {
         applicationId "com.daon.sdk.nfc.sample"
-        minSdkVersion 23
+        minSdk 23
         targetSdk 36
         versionCode 1
         versionName sdk_version
@@ -51,10 +51,6 @@ android {
 
     buildFeatures {
         compose true
-    }
-
-    composeOptions {
-        kotlinCompilerExtensionVersion '1.5.15'
     }
 }
 
