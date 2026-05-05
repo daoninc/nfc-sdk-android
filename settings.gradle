@@ -9,25 +9,17 @@ pluginManagement {
     }
 }
 
-def localProperties = new Properties()
-def localPropertiesFile = new File(rootDir, "local.properties")
-if (localPropertiesFile.exists()) {
-    localPropertiesFile.withInputStream { localProperties.load(it) }
-}
-
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
         mavenCentral()
 
-        // Daon SDK packages — replace credentials with a valid GitHub fine-grained token
-        // that has read access to https://github.com/daoninc/sdk-packages
         maven {
             url = uri("https://maven.pkg.github.com/daoninc/sdk-packages/")
             credentials {
-                username = localProperties.getProperty("daon.repository.username")
-                password = localProperties.getProperty("daon.repository.token")
+                username "<GITHUB_USER>"
+                password "<GITHUB_TOKEN>"
             }
         }
     }
