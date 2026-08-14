@@ -1,6 +1,5 @@
 package com.daon.sdk.nfc.sample.ui.scan
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -18,15 +17,11 @@ import androidx.compose.material.icons.outlined.CreditCard
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Switch
@@ -43,7 +38,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.annotation.StringRes
 import androidx.compose.ui.res.stringResource
 import com.daon.sdk.nfc.sample.R
 import com.daon.sdk.nfc.sample.ui.theme.AppDimens
@@ -52,16 +46,10 @@ import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
-/** Encryption algorithm options surfaced in [DocumentFormCard]. */
-internal enum class EncryptionAlgorithm(@param:StringRes val labelRes: Int) {
-    DEFAULT(R.string.encryption_algorithm_default),
-    SHA1(R.string.encryption_algorithm_sha1),
-}
-
 /**
  * Elevated form card that owns all document input fields:
  * document number, date of birth, date of expiry,
- * active authentication toggle, and encryption algorithm selector.
+ * and active authentication toggle.
  *
  * Date picker dialogs are managed internally; selected values are reported
  * via [onDateOfBirthChange] / [onDateOfExpiryChange] callbacks.
@@ -77,13 +65,10 @@ internal fun DocumentFormCard(
     onDateOfExpiryChange: (Long) -> Unit,
     enableActiveAuthentication: Boolean,
     onActiveAuthChange: (Boolean) -> Unit,
-    encryptionAlgorithm: EncryptionAlgorithm,
-    onEncryptionChange: (EncryptionAlgorithm) -> Unit,
 ) {
     // Local UI state for pickers and dropdown.
     var showDobPicker by remember { mutableStateOf(false) }
     var showDoePicker by remember { mutableStateOf(false) }
-    var encryptionMenuExpanded by remember { mutableStateOf(false) }
 
     val dobPickerState = rememberDatePickerState(initialSelectedDateMillis = dateOfBirthMillis)
     val doePickerState = rememberDatePickerState(initialSelectedDateMillis = dateOfExpiryMillis)
@@ -198,43 +183,6 @@ internal fun DocumentFormCard(
                 )
             }
 
-            // ── Encryption algorithm selector (visible only when Active Authentication is on) ──
-            AnimatedVisibility(visible = enableActiveAuthentication) {
-                ExposedDropdownMenuBox(
-                    expanded = encryptionMenuExpanded,
-                    onExpandedChange = { encryptionMenuExpanded = it },
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    OutlinedTextField(
-                        value = stringResource(encryptionAlgorithm.labelRes),
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text(stringResource(R.string.label_encryption_algorithm)) },
-                        trailingIcon = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = encryptionMenuExpanded)
-                        },
-                        shape = RoundedCornerShape(AppDimens.CornerSmall),
-                        colors = outlinedFieldColors(),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .menuAnchor(MenuAnchorType.PrimaryNotEditable),
-                    )
-                    ExposedDropdownMenu(
-                        expanded = encryptionMenuExpanded,
-                        onDismissRequest = { encryptionMenuExpanded = false },
-                    ) {
-                        EncryptionAlgorithm.entries.forEach { option ->
-                            DropdownMenuItem(
-                                text = { Text(stringResource(option.labelRes)) },
-                                onClick = {
-                                    onEncryptionChange(option)
-                                    encryptionMenuExpanded = false
-                                },
-                            )
-                        }
-                    }
-                }
-            }
         }
     }
 

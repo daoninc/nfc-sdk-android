@@ -73,7 +73,6 @@ fun ScanScreen(viewModel: NfcViewModel) {
     var dateOfExpiryMillis by rememberSaveable { mutableStateOf<Long?>(null) }
     var validationError by rememberSaveable { mutableStateOf<String?>(null) }
     var enableActiveAuthentication by rememberSaveable { mutableStateOf(false) }
-    var encryptionAlgorithm by rememberSaveable { mutableStateOf(EncryptionAlgorithm.DEFAULT) }
 
     val errDocNum = stringResource(R.string.error_document_number_length)
     val errDob = stringResource(R.string.error_date_of_birth_required)
@@ -94,10 +93,6 @@ fun ScanScreen(viewModel: NfcViewModel) {
             params.enableRawData(true)
             if (enableActiveAuthentication) {
                 params.setChallenge(generateNonce())
-            }
-            if (encryptionAlgorithm == EncryptionAlgorithm.SHA1) {
-                params.setSignatureAlgorithm("SHA1WithRSA/ISO9796-2")
-                params.setDigestAlgorithm("SHA1")
             }
             viewModel.startScan(params)
         }
@@ -145,8 +140,6 @@ fun ScanScreen(viewModel: NfcViewModel) {
                         onDateOfExpiryChange = { dateOfExpiryMillis = it },
                         enableActiveAuthentication = enableActiveAuthentication,
                         onActiveAuthChange = { enableActiveAuthentication = it },
-                        encryptionAlgorithm = encryptionAlgorithm,
-                        onEncryptionChange = { encryptionAlgorithm = it },
                     )
 
                     Spacer(Modifier.height(AppDimens.SpacingXLarge))
@@ -208,8 +201,6 @@ fun ScanScreen(viewModel: NfcViewModel) {
                         onDateOfExpiryChange = { dateOfExpiryMillis = it },
                         enableActiveAuthentication = enableActiveAuthentication,
                         onActiveAuthChange = { enableActiveAuthentication = it },
-                        encryptionAlgorithm = encryptionAlgorithm,
-                        onEncryptionChange = { encryptionAlgorithm = it },
                     )
 
                     Spacer(Modifier.height(AppDimens.SpacingXLarge))

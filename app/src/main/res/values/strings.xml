@@ -28,9 +28,6 @@
     <string name="content_description_select_date_of_expiry">Select date of expiry</string>
     <string name="label_active_authentication">Active Authentication</string>
     <string name="label_active_authentication_description">Sends a random challenge to the chip</string>
-    <string name="label_encryption_algorithm">Encryption Algorithm</string>
-    <string name="encryption_algorithm_default">Default</string>
-    <string name="encryption_algorithm_sha1">SHA1</string>
 
     <!-- ── NfcUnavailableDialog ─────────────────────────────────────────── -->
     <string name="nfc_dialog_title_disabled">NFC disabled</string>
