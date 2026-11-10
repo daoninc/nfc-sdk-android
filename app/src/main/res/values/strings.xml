@@ -14,6 +14,7 @@
     <string name="error_document_number_length">Document number must be between 1 and 9 characters.</string>
     <string name="error_date_of_birth_required">Please select a date of birth.</string>
     <string name="error_date_of_expiry_required">Please select a date of expiry.</string>
+    <string name="error_date_picker_invalid">Enter a valid date in %1$s format.</string>
 
     <!-- ── ScanScreenHeader ─────────────────────────────────────────────── -->
     <string name="content_description_daon_logo">Daon logo</string>
@@ -85,7 +86,9 @@
     <string name="nfc_status_scan_complete">Scan complete</string>
     <string name="nfc_status_hold_near_document">Hold your device near the document.</string>
     <string name="nfc_error_authentication_failed">Authentication failed. Check document details.</string>
+    <string name="nfc_error_connection_lost">Connection lost. Hold your device still against the document and try again.</string>
     <string name="nfc_error_tag_not_supported">NFC tag not supported.</string>
+    <string name="nfc_error_pace_not_supported">PACE authentication was attempted but the passport does not support it.</string>
     <string name="nfc_error_unable_to_read">Unable to read document data.</string>
     <string name="nfc_error_license">License error: %s</string>
     <string name="nfc_error_read_failed">NFC read failed. Please try again.</string>

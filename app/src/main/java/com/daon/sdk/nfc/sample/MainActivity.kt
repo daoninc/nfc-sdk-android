@@ -9,6 +9,8 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 import com.daon.sdk.nfc.sample.ui.result.ResultScreen
 import com.daon.sdk.nfc.sample.ui.scan.ScanScreen
 import com.daon.sdk.nfc.sample.ui.theme.NfcSdkAndroidTheme
@@ -29,6 +31,11 @@ import com.daon.sdk.nfc.sample.ui.theme.NfcSdkAndroidTheme
 class MainActivity : FragmentActivity() {
 
     private val viewModel: NfcViewModel by viewModels()
+    private val readerLifecycleObserver = object : DefaultLifecycleObserver {
+        override fun onResume(owner: LifecycleOwner) {
+            viewModel.resumeReader()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge(
@@ -44,6 +51,7 @@ class MainActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
 
         viewModel.initReader(this)
+        lifecycle.addObserver(readerLifecycleObserver)
 
         setContent {
             NfcSdkAndroidTheme {
@@ -61,22 +69,17 @@ class MainActivity : FragmentActivity() {
     }
 
     /**
-     * Re-enables NFC foreground dispatch when the activity returns to the foreground.
-     * Delegates to [NfcViewModel.resumeReader], which only re-enables the reader when the
-     * scanning dialog is visible (i.e. the user actively initiated a scan).
-     */
-    override fun onResume() {
-        super.onResume()
-        viewModel.resumeReader()
-    }
-
-    /**
      * Disables NFC foreground dispatch when the activity moves to the background,
      * ensuring the reader is not active when the app is not in the foreground.
      */
     override fun onPause() {
-        super.onPause()
         viewModel.disableReader()
+        super.onPause()
+    }
+
+    override fun onStop() {
+        viewModel.stopReader()
+        super.onStop()
     }
 
     /**

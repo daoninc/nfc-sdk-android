@@ -39,14 +39,10 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import com.daon.sdk.nfc.sample.NfcViewModel
+import com.daon.sdk.nfc.sample.ScanInput
+import com.daon.sdk.nfc.sample.ScanInputError
 import com.daon.sdk.nfc.sample.R
 import com.daon.sdk.nfc.sample.ui.theme.AppDimens
-import com.daon.sdk.nfc.reader.passport.PassportParameters
-import java.security.SecureRandom
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.TimeZone
 
 /**
  * Main scan screen.
@@ -82,19 +78,13 @@ fun ScanScreen(viewModel: NfcViewModel) {
 
     // Shared scan button click handler.
     val onScanClick = {
-        val dobShort = dateOfBirthMillis?.let { formatShortDate(it) }
-        val doeShort = dateOfExpiryMillis?.let { formatShortDate(it) }
-        val error = validate(documentNumber, dobShort, doeShort, errDocNum, errDob, errDoe)
-        if (error != null) {
-            validationError = error
-        } else {
-            val params = PassportParameters(documentNumber, dobShort!!, doeShort!!)
-            params.enablePhoto(true)
-            params.enableRawData(true)
-            if (enableActiveAuthentication) {
-                params.setChallenge(generateNonce())
-            }
-            viewModel.startScan(params)
+        validationError = when (viewModel.startScan(
+            ScanInput(documentNumber, dateOfBirthMillis, dateOfExpiryMillis, enableActiveAuthentication)
+        )) {
+            ScanInputError.DOCUMENT_NUMBER -> errDocNum
+            ScanInputError.DATE_OF_BIRTH -> errDob
+            ScanInputError.DATE_OF_EXPIRY -> errDoe
+            null -> null
         }
         Unit
     }
@@ -255,47 +245,4 @@ fun ScanScreen(viewModel: NfcViewModel) {
             onRetry = { viewModel.retryScan() },
         )
     }
-}
-
-// ── Private helpers ───────────────────────────────────────────────────────────
-
-/**
- * Validates the user's input before building [PassportParameters].
- *
- * @return A human-readable error message, or `null` if all inputs are valid.
- */
-private fun validate(
-    documentNumber: String,
-    dateOfBirth: String?,
-    dateOfExpiry: String?,
-    errDocNum: String,
-    errDob: String,
-    errDoe: String,
-): String? {
-    if (documentNumber.isEmpty() || documentNumber.length > 9) {
-        return errDocNum
-    }
-    if (dateOfBirth == null) return errDob
-    if (dateOfExpiry == null) return errDoe
-    return null
-}
-
-/**
- * Formats epoch milliseconds as a `yyMMdd` string expected by [PassportParameters].
- * Uses UTC to match the timezone-neutral value stored by the Material3 date picker.
- */
-private fun formatShortDate(millis: Long): String {
-    val sdf = SimpleDateFormat("yyMMdd", Locale.US)
-    sdf.timeZone = TimeZone.getTimeZone("UTC")
-    return sdf.format(Date(millis))
-}
-
-/**
- * Generates an 8-byte cryptographically random nonce for Active Authentication.
- * Mirrors the dev-app reference implementation.
- */
-private fun generateNonce(): ByteArray {
-    val nonce = ByteArray(8)
-    SecureRandom.getInstance("SHA1PRNG").nextBytes(nonce)
-    return nonce
 }

@@ -1,5 +1,7 @@
 package com.daon.sdk.nfc.sample
 
+import com.daon.sdk.nfc.sample.NfcScanState
+import com.daon.sdk.nfc.sample.NfcUiState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test

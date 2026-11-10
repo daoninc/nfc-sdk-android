@@ -13,7 +13,7 @@
         android:theme="@android:style/Theme.Material.NoActionBar">
 
         <activity
-            android:name=".MainActivity"
+            android:name="com.daon.sdk.nfc.sample.MainActivity"
             android:exported="true"
             android:launchMode="singleTop">
             <intent-filter>

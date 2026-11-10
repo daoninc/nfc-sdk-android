@@ -2,6 +2,7 @@ package com.daon.sdk.nfc.sample
 
 import android.app.Application
 import android.content.Intent
+import android.nfc.NfcAdapter
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import com.daon.sdk.nfc.NFCReader
@@ -52,7 +53,7 @@ data class NfcUiState(
  * ViewModel that owns the [NFCReader] instance and bridges its callbacks into
  * Compose-observable [StateFlow]s.
  *
- * @param application Application context required to construct [NFCReader].
+ * @param application Application context used for localized scan status messages.
  */
 class NfcViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -83,46 +84,62 @@ class NfcViewModel(application: Application) : AndroidViewModel(application) {
     private var pendingParams: PassportParameters? = null
 
     private var isActivityResumed = false
+    // The published SDK cannot report whether enable() registered dispatch.
+    private var readerNeedsDisable = false
+    private var isReadingTag = false
+    private var scanGeneration = 0
+    private var pendingTagIntent: Intent? = null
 
-    // TagReaderCallback implementation forwarded from the Activity's onNewIntent.
-    private val tagReaderCallback = object : TagReaderCallback {
+    private fun syncReader() {
+        val shouldEnable = isActivityResumed && _dialogVisible.value &&
+            _uiState.value.scanState == NfcScanState.IN_PROGRESS
+        val reader = nfcReader
+        if (shouldEnable) {
+            if (reader != null) {
+                readerNeedsDisable = true
+                reader.enable()
+            }
+        } else if (readerNeedsDisable) {
+            reader?.disable()
+            readerNeedsDisable = false
+        }
+    }
+
+    private fun tagReaderCallback(generation: Int) = object : TagReaderCallback {
         override fun tagReaderDidFinish(data: TagData) {
-            Log.d("DAON", "tagReaderDidFinish: ${data.toJSON()}")
-            nfcReader?.disable()
+            if (generation != scanGeneration) return
+            scanGeneration++
+            isReadingTag = false
+            Log.d("DAON", "tagReaderDidFinish")
             _uiState.value = NfcUiState(
                 scanState = NfcScanState.SUCCESS,
                 message = getApplication<Application>().getString(R.string.nfc_status_scan_complete),
                 result = data,
             )
+            syncReader()
         }
 
         override fun tagReaderFailed(code: Short, message: String?) {
+            if (generation != scanGeneration) return
+            scanGeneration++
+            isReadingTag = false
             Log.d("DAON", "tagReaderFailed: $message")
-            if (code == TagError.ERROR_CANCELLED) {
-                // Scan was interrupted (e.g. app backgrounded). Keep the dialog visible
-                // and show the failure state so the user sees it on return to foreground.
-                if (_dialogVisible.value) {
-                    nfcReader?.disable()
-                    _uiState.value = NfcUiState(
-                        scanState = NfcScanState.FAIL,
-                        message = getApplication<Application>().getString(R.string.nfc_error_read_failed),
-                    )
-                }
-                return
-            }
             val errorMessage = when (code) {
                 TagError.ERROR_NO_ACCESS -> getApplication<Application>().getString(R.string.nfc_error_authentication_failed)
+                TagError.ERROR_CONNECTION_LOST -> getApplication<Application>().getString(R.string.nfc_error_connection_lost)
                 TagError.ERROR_TAG_NOT_SUPPORTED -> getApplication<Application>().getString(R.string.nfc_error_tag_not_supported)
+                TagError.ERROR_PACE_NOT_SUPPORTED -> getApplication<Application>().getString(R.string.nfc_error_pace_not_supported)
                 TagError.ERROR_NO_DATA,
                 TagError.ERROR_NOT_IMPLEMENTED -> getApplication<Application>().getString(R.string.nfc_error_unable_to_read)
                 TagError.ERROR_LICENSE -> getApplication<Application>().getString(R.string.nfc_error_license, message.orEmpty())
                 else -> getApplication<Application>().getString(R.string.nfc_error_read_failed)
             }
-            nfcReader?.disable()
             _uiState.value = NfcUiState(scanState = NfcScanState.FAIL, message = errorMessage)
+            syncReader()
         }
 
         override fun tagReaderInformation(info: TagReaderInfo) {
+            if (generation != scanGeneration) return
             _uiState.value = NfcUiState(
                 scanState = NfcScanState.IN_PROGRESS,
                 message = info.message ?: "",
@@ -149,8 +166,20 @@ class NfcViewModel(application: Application) : AndroidViewModel(application) {
      * @param activity The hosting [androidx.fragment.app.FragmentActivity].
      */
     fun initReader(activity: androidx.fragment.app.FragmentActivity) {
+        nfcReader?.disable()
+        readerNeedsDisable = false
         nfcReader = NFCReader(activity, "license.txt", false)
         Log.d("DAON", "NFCReader initialised — SDK version: ${NFCReader.version()}")
+    }
+
+    /**
+     * Validates form input and starts a scan if valid. Returns the field requiring correction.
+     */
+    fun startScan(input: ScanInput): ScanInputError? {
+        val error = input.validate()
+        if (error != null) return error
+        startScan(input.toParameters())
+        return null
     }
 
     /**
@@ -178,11 +207,18 @@ class NfcViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
         }
+        if (isReadingTag) {
+            nfcReader?.disable()
+            readerNeedsDisable = false
+        }
+        pendingTagIntent = null
+        scanGeneration++
+        isReadingTag = false
         pendingParams = params
         _uiState.value = NfcUiState(scanState = NfcScanState.IN_PROGRESS, message = getApplication<Application>().getString(R.string.nfc_status_hold_near_document))
         _dialogVisible.value = true
 
-        if (isActivityResumed) reader?.enable()
+        syncReader()
     }
 
     /**
@@ -190,10 +226,13 @@ class NfcViewModel(application: Application) : AndroidViewModel(application) {
      * Should be called when the user cancels the dialog.
      */
     fun cancelScan() {
-        nfcReader?.disable()
+        pendingTagIntent = null
+        scanGeneration++
+        isReadingTag = false
         _dialogVisible.value = false
         _showResult.value = false
         _uiState.value = NfcUiState()
+        syncReader()
     }
 
     /**
@@ -205,17 +244,19 @@ class NfcViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
-     * Resets the scan state to [NfcScanState.IN_PROGRESS] and re-enables NFC foreground
-     * dispatch using the previously stored [pendingParams]. Should be called when the user
-     * taps **Try Again** after a failed scan.
+     * Resets a failed scan to [NfcScanState.IN_PROGRESS] using the previously stored
+     * [pendingParams]. Dispatch is re-enabled only when the activity is resumed.
      */
     fun retryScan() {
-        if (pendingParams == null) return
+        if (pendingParams == null || !_dialogVisible.value || _uiState.value.scanState != NfcScanState.FAIL) return
+        pendingTagIntent = null
+        scanGeneration++
+        isReadingTag = false
         _uiState.value = NfcUiState(
             scanState = NfcScanState.IN_PROGRESS,
             message = getApplication<Application>().getString(R.string.nfc_status_hold_near_document),
         )
-        nfcReader?.enable()
+        syncReader()
     }
 
     /**
@@ -225,6 +266,7 @@ class NfcViewModel(application: Application) : AndroidViewModel(application) {
     fun showResults() {
         _dialogVisible.value = false
         _showResult.value = true
+        syncReader()
     }
 
     /**
@@ -237,22 +279,37 @@ class NfcViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
-     * Disables NFC foreground dispatch.
-     * Call from [MainActivity.onPause].
+     * Cancels an active read and disables NFC foreground dispatch on pause.
      */
     fun disableReader() {
         isActivityResumed = false
-        nfcReader?.disable()
+        pendingTagIntent = null
+        if (isReadingTag) {
+            scanGeneration++
+            isReadingTag = false
+            _uiState.value = NfcUiState(
+                scanState = NfcScanState.FAIL,
+                message = getApplication<Application>().getString(R.string.nfc_error_read_failed),
+            )
+        }
+        syncReader()
+    }
+
+    /** Discards a tag delivered during a pause if the activity actually enters the background. */
+    fun stopReader() {
+        pendingTagIntent = null
     }
 
     /**
-     * Re-enables NFC foreground dispatch when the dialog is visible.
-     * Call from [MainActivity.onResume].
+     * Re-enables NFC foreground dispatch only for an unfinished scan.
+     * Call from the hosting activity's `ON_RESUME` lifecycle event.
      */
     fun resumeReader() {
         isActivityResumed = true
-        if (_dialogVisible.value) {
-            nfcReader?.enable()
+        syncReader()
+        pendingTagIntent?.let { intent ->
+            pendingTagIntent = null
+            onNewIntent(intent)
         }
     }
 
@@ -264,9 +321,17 @@ class NfcViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun onNewIntent(intent: Intent?) {
         val params = pendingParams ?: return
-        if (_uiState.value.scanState != NfcScanState.IN_PROGRESS) {
+        val reader = nfcReader ?: return
+        if (!_dialogVisible.value || isReadingTag ||
+            _uiState.value.scanState != NfcScanState.IN_PROGRESS ||
+            intent?.action != NfcAdapter.ACTION_TECH_DISCOVERED) {
             return
         }
-        nfcReader?.read(intent, params, tagReaderCallback)
+        if (!isActivityResumed) {
+            pendingTagIntent = intent
+            return
+        }
+        isReadingTag = true
+        reader.read(intent, params, tagReaderCallback(scanGeneration))
     }
 }

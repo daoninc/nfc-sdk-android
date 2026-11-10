@@ -8,6 +8,7 @@ compose-bom = "2026.04.01"
 junit = "4.13.2"
 kotlinx-coroutines-test = "1.10.2"
 mockk = "1.14.9"
+robolectric = "4.16"
 
 [libraries]
 daon-nfc = { module = "com.daon.sdk:nfc", version.ref = "daon-nfc" }
@@ -28,4 +29,4 @@ compose-material-icons-extended = { module = "androidx.compose.material:material
 junit = { module = "junit:junit", version.ref = "junit" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines-test" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
-
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }

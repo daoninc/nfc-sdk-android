@@ -1,5 +1,6 @@
 package com.daon.sdk.nfc.sample.ui.scan
 
+import android.os.Build
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -36,12 +37,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.res.stringResource
+import androidx.core.os.ConfigurationCompat
 import com.daon.sdk.nfc.sample.R
 import com.daon.sdk.nfc.sample.ui.theme.AppDimens
+import java.text.DateFormat
 import java.text.SimpleDateFormat
+import java.time.chrono.Chronology
+import java.time.format.DateTimeFormatterBuilder
+import java.time.format.FormatStyle
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
@@ -49,7 +57,7 @@ import java.util.TimeZone
 /**
  * Elevated form card that owns all document input fields:
  * document number, date of birth, date of expiry,
- * and active authentication toggle.
+ * and the active authentication toggle.
  *
  * Date picker dialogs are managed internally; selected values are reported
  * via [onDateOfBirthChange] / [onDateOfExpiryChange] callbacks.
@@ -66,20 +74,54 @@ internal fun DocumentFormCard(
     enableActiveAuthentication: Boolean,
     onActiveAuthChange: (Boolean) -> Unit,
 ) {
-    // Local UI state for pickers and dropdown.
+    val locale = ConfigurationCompat.getLocales(LocalConfiguration.current)[0] ?: Locale.getDefault()
+    val dateInputPattern = remember(locale) { dateInputPattern(locale) }
+
+    // Local UI state for pickers.
     var showDobPicker by remember { mutableStateOf(false) }
     var showDoePicker by remember { mutableStateOf(false) }
+    var dobInputError by remember { mutableStateOf(false) }
+    var doeInputError by remember { mutableStateOf(false) }
 
     val dobPickerState = rememberDatePickerState(initialSelectedDateMillis = dateOfBirthMillis)
     val doePickerState = rememberDatePickerState(initialSelectedDateMillis = dateOfExpiryMillis)
+    val focusManager = LocalFocusManager.current
+
+    LaunchedEffect(dobPickerState.selectedDateMillis) {
+        if (dobPickerState.selectedDateMillis != null) dobInputError = false
+    }
+    LaunchedEffect(doePickerState.selectedDateMillis) {
+        if (doePickerState.selectedDateMillis != null) doeInputError = false
+    }
+
+    val dismissDobPicker = {
+        showDobPicker = false
+        dobInputError = false
+        focusManager.clearFocus(force = true)
+    }
+    val dismissDoePicker = {
+        showDoePicker = false
+        doeInputError = false
+        focusManager.clearFocus(force = true)
+    }
 
     // Open the date picker when the read-only text field is tapped anywhere.
     val dobInteractionSource = remember { MutableInteractionSource() }
     val doeInteractionSource = remember { MutableInteractionSource() }
     val dobIsPressed by dobInteractionSource.collectIsPressedAsState()
     val doeIsPressed by doeInteractionSource.collectIsPressedAsState()
-    LaunchedEffect(dobIsPressed) { if (dobIsPressed) showDobPicker = true }
-    LaunchedEffect(doeIsPressed) { if (doeIsPressed) showDoePicker = true }
+    LaunchedEffect(dobIsPressed) {
+        if (dobIsPressed) {
+            dobInputError = false
+            showDobPicker = true
+        }
+    }
+    LaunchedEffect(doeIsPressed) {
+        if (doeIsPressed) {
+            doeInputError = false
+            showDoePicker = true
+        }
+    }
 
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
@@ -121,7 +163,7 @@ internal fun DocumentFormCard(
 
             // ── Date of Birth ─────────────────────────────────────────────────
             OutlinedTextField(
-                value = dateOfBirthMillis?.let { formatDisplayDate(it) } ?: "",
+                value = dateOfBirthMillis?.let { formatDisplayDate(it, locale) } ?: "",
                 onValueChange = {},
                 readOnly = true,
                 label = { Text(stringResource(R.string.label_date_of_birth)) },
@@ -140,7 +182,7 @@ internal fun DocumentFormCard(
 
             // ── Date of Expiry ────────────────────────────────────────────────
             OutlinedTextField(
-                value = dateOfExpiryMillis?.let { formatDisplayDate(it) } ?: "",
+                value = dateOfExpiryMillis?.let { formatDisplayDate(it, locale) } ?: "",
                 onValueChange = {},
                 readOnly = true,
                 label = { Text(stringResource(R.string.label_date_of_expiry)) },
@@ -182,47 +224,80 @@ internal fun DocumentFormCard(
                     onCheckedChange = onActiveAuthChange,
                 )
             }
-
         }
     }
 
     // ── Date of Birth picker ──────────────────────────────────────────────────
     if (showDobPicker) {
         DatePickerDialog(
-            onDismissRequest = { showDobPicker = false },
+            onDismissRequest = dismissDobPicker,
             confirmButton = {
                 TextButton(
                     onClick = {
-                        dobPickerState.selectedDateMillis?.let { onDateOfBirthChange(it) }
-                        showDobPicker = false
+                        val selectedDateMillis = dobPickerState.selectedDateMillis
+                        if (selectedDateMillis == null) {
+                            dobInputError = true
+                        } else {
+                            onDateOfBirthChange(selectedDateMillis)
+                            dismissDobPicker()
+                        }
                     },
                 ) { Text(stringResource(R.string.ok)) }
             },
             dismissButton = {
-                TextButton(onClick = { showDobPicker = false }) { Text(stringResource(R.string.cancel)) }
+                TextButton(
+                    onClick = dismissDobPicker,
+                ) { Text(stringResource(R.string.cancel)) }
             },
         ) {
-            DatePicker(state = dobPickerState)
+            Column {
+                DatePicker(state = dobPickerState)
+                if (dobInputError) {
+                    Text(
+                        text = stringResource(R.string.error_date_picker_invalid, dateInputPattern),
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(horizontal = AppDimens.CardContentPaddingHorizontal),
+                    )
+                }
+            }
         }
     }
 
     // ── Date of Expiry picker ─────────────────────────────────────────────────
     if (showDoePicker) {
         DatePickerDialog(
-            onDismissRequest = { showDoePicker = false },
+            onDismissRequest = dismissDoePicker,
             confirmButton = {
                 TextButton(
                     onClick = {
-                        doePickerState.selectedDateMillis?.let { onDateOfExpiryChange(it) }
-                        showDoePicker = false
+                        val selectedDateMillis = doePickerState.selectedDateMillis
+                        if (selectedDateMillis == null) {
+                            doeInputError = true
+                        } else {
+                            onDateOfExpiryChange(selectedDateMillis)
+                            dismissDoePicker()
+                        }
                     },
                 ) { Text(stringResource(R.string.ok)) }
             },
             dismissButton = {
-                TextButton(onClick = { showDoePicker = false }) { Text(stringResource(R.string.cancel)) }
+                TextButton(
+                    onClick = dismissDoePicker,
+                ) { Text(stringResource(R.string.cancel)) }
             },
         ) {
-            DatePicker(state = doePickerState)
+            Column {
+                DatePicker(state = doePickerState)
+                if (doeInputError) {
+                    Text(
+                        text = stringResource(R.string.error_date_picker_invalid, dateInputPattern),
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(horizontal = AppDimens.CardContentPaddingHorizontal),
+                    )
+                }
+            }
         }
     }
 }
@@ -240,11 +315,35 @@ internal fun outlinedFieldColors() = OutlinedTextFieldDefaults.colors(
 )
 
 /**
- * Formats epoch milliseconds as a human-readable date string (e.g. "Jul 15, 1985").
+ * Formats epoch milliseconds as a human-readable date string using the UI locale.
  * Uses UTC to match the timezone-neutral value stored by the Material3 date picker.
  */
-private fun formatDisplayDate(millis: Long): String {
-    val sdf = SimpleDateFormat("MMM d, yyyy", Locale.US)
-    sdf.timeZone = TimeZone.getTimeZone("UTC")
-    return sdf.format(Date(millis))
+internal fun formatDisplayDate(millis: Long, locale: Locale): String {
+    val formatter = DateFormat.getDateInstance(DateFormat.MEDIUM, locale)
+    formatter.timeZone = TimeZone.getTimeZone("UTC")
+    return formatter.format(Date(millis))
+}
+
+/**
+ * Matches Material3's numeric input pattern, including its pre-API 26 locale lookup.
+ */
+internal fun dateInputPattern(locale: Locale): String {
+    val shortPattern = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        DateTimeFormatterBuilder.getLocalizedDateTimePattern(
+            FormatStyle.SHORT,
+            null,
+            Chronology.ofLocale(locale),
+            locale,
+        )
+    } else {
+        (DateFormat.getDateInstance(DateFormat.SHORT, locale) as SimpleDateFormat).toPattern()
+    }
+    return shortPattern
+        .replace(Regex("[^dMy/\\-.]"), "")
+        .replace(Regex("d{1,2}"), "dd")
+        .replace(Regex("M{1,2}"), "MM")
+        .replace(Regex("y{1,4}"), "yyyy")
+        .replace("My", "M/y")
+        .removeSuffix(".")
+        .uppercase(Locale.ROOT)
 }

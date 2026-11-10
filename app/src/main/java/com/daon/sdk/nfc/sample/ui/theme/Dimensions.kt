@@ -79,6 +79,12 @@ internal object AppDimens {
     /** Reduced indicator box used in landscape where vertical space is limited. */
     val NfcIndicatorBoxSizeCompact = 100.dp
 
+    /** Diameter of the solid primary circle behind the NFC icon. */
+    val NfcIconCircleSize = 80.dp
+
+    /** Size of the NFC icon drawn inside the icon circle. */
+    val NfcIconSize = 40.dp
+
     /** Gap from the icon circle edge to the first ripple ring. */
     val NfcRingInnerGap = 6.dp
 
